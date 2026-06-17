@@ -1,0 +1,179 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ExternalLink } from 'lucide-react';
+
+const portfolioImage1 = "https://images.unsplash.com/photo-1765648684555-de2d0f6af467?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMHByb2Zlc3Npb25hbCUyMHdvcmtzcGFjZXxlbnwxfHx8fDE3ODE3MDI2NTl8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
+const portfolioImage2 = "https://images.unsplash.com/photo-1487014679447-9f8336841d58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlY29tbWVyY2UlMjB3ZWJzaXRlJTIwbW9ja3VwfGVufDF8fHx8MTc4MTcwMjY2MHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
+const portfolioImage3 = "https://images.unsplash.com/photo-1561070791-2526d30994b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0Zm9saW8lMjBjcmVhdGl2ZSUyMGRlc2lnbnxlbnwxfHx8fDE3ODE3MDI2NjB8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
+const portfolioImage4 = "https://images.unsplash.com/photo-1648134859179-ed0c98f54519?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzYWFzJTIwYXBwbGljYXRpb24lMjBpbnRlcmZhY2V8ZW58MXx8fHwxNzgxNzAyNjYwfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
+
+const projects = [
+  {
+    id: 1,
+    title: 'TechStart Landing',
+    category: 'Business',
+    industry: 'Technology',
+    image: portfolioImage1,
+    tech: ['React', 'Tailwind', 'Vercel'],
+  },
+  {
+    id: 2,
+    title: 'Fashion Store',
+    category: 'E-Commerce',
+    industry: 'Retail',
+    image: portfolioImage2,
+    tech: ['Next.js', 'Stripe', 'Shopify'],
+  },
+  {
+    id: 3,
+    title: 'Creative Portfolio',
+    category: 'Portfolio',
+    industry: 'Design',
+    image: portfolioImage3,
+    tech: ['React', 'Framer Motion', 'Firebase'],
+  },
+  {
+    id: 4,
+    title: 'CloudSync SaaS',
+    category: 'SaaS',
+    industry: 'Software',
+    image: portfolioImage4,
+    tech: ['React', 'Node.js', 'PostgreSQL'],
+  },
+  {
+    id: 5,
+    title: 'Local Restaurant',
+    category: 'Business',
+    industry: 'Food & Beverage',
+    image: portfolioImage1,
+    tech: ['WordPress', 'WooCommerce'],
+  },
+  {
+    id: 6,
+    title: 'Designer Showcase',
+    category: 'Portfolio',
+    industry: 'Creative',
+    image: portfolioImage3,
+    tech: ['Webflow', 'Custom CSS'],
+  },
+];
+
+const categories = ['All', 'Business', 'Portfolio', 'E-Commerce', 'SaaS'];
+
+export function Portfolio() {
+  const [activeCategory, setActiveCategory] = useState('All');
+
+  const filteredProjects =
+    activeCategory === 'All'
+      ? projects
+      : projects.filter((project) => project.category === activeCategory);
+
+  return (
+    <section id="portfolio" className="py-20 md:py-32 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <span className="text-indigo-600 font-semibold text-sm uppercase tracking-wider">
+            Our Work
+          </span>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 mb-4">
+            Portfolio{' '}
+            <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Showcase
+            </span>
+          </h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Explore our latest projects and see the quality we deliver to our clients.
+          </p>
+        </motion.div>
+
+        {/* Filter Tabs */}
+        <div className="flex flex-wrap justify-center gap-3 mb-12">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={`px-6 py-2.5 rounded-lg font-medium transition-all duration-300 ${
+                activeCategory === category
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        {/* Portfolio Grid */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeCategory}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {filteredProjects.map((project, index) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="group relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300"
+              >
+                {/* Image */}
+                <div className="relative h-64 overflow-hidden bg-gray-100">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                  {/* View Project Button */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button className="px-6 py-3 bg-white text-gray-900 rounded-lg font-semibold flex items-center gap-2 hover:scale-105 transition-transform">
+                      View Project
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 bg-indigo-100 text-indigo-600 text-xs font-semibold rounded-full">
+                      {project.category}
+                    </span>
+                    <span className="text-sm text-gray-500">{project.industry}</span>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    {project.title}
+                  </h3>
+
+                  <div className="flex flex-wrap gap-2">
+                    {project.tech.map((tech) => (
+                      <span
+                        key={tech}
+                        className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </section>
+  );
+}

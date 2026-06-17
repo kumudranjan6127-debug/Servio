@@ -1,0 +1,175 @@
+import { motion } from 'motion/react';
+import { Check, Star } from 'lucide-react';
+
+const plans = [
+  {
+    name: 'Starter',
+    price: '$999',
+    description: 'Perfect for small businesses and startups',
+    features: [
+      'Single Landing Page',
+      'Mobile Responsive Design',
+      'Basic SEO Optimization',
+      'Contact Form Integration',
+      '2 Revisions Included',
+      '1 Week Delivery',
+    ],
+    highlighted: false,
+  },
+  {
+    name: 'Business',
+    price: '$2,499',
+    description: 'Most popular for growing businesses',
+    features: [
+      'Multi-page Website (Up to 5 pages)',
+      'CMS Integration',
+      'Advanced SEO & Analytics',
+      'E-commerce Ready',
+      'Custom Functionality',
+      '5 Revisions Included',
+      'Priority Support',
+      '2 Week Delivery',
+    ],
+    highlighted: true,
+  },
+  {
+    name: 'Premium',
+    price: '$4,999+',
+    description: 'For complex web applications',
+    features: [
+      'Custom Web Application',
+      'Advanced Features & Integrations',
+      'User Authentication',
+      'Database Design',
+      'API Development',
+      'Unlimited Revisions',
+      'Dedicated Project Manager',
+      '4 Week Delivery',
+      '3 Months Free Support',
+    ],
+    highlighted: false,
+  },
+];
+
+export function Pricing() {
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <section id="pricing" className="py-20 md:py-32 bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <span className="text-indigo-600 font-semibold text-sm uppercase tracking-wider">
+            Pricing
+          </span>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3 mb-4">
+            Simple,{' '}
+            <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Transparent Pricing
+            </span>
+          </h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Choose the perfect plan for your business. All plans include a 30-day money-back guarantee.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {plans.map((plan, index) => (
+            <motion.div
+              key={plan.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className={`relative bg-white rounded-2xl p-8 ${
+                plan.highlighted
+                  ? 'border-2 border-indigo-600 shadow-2xl shadow-indigo-500/20 md:-mt-4 md:mb-4'
+                  : 'border-2 border-gray-200 shadow-lg'
+              }`}
+            >
+              {/* Popular Badge */}
+              {plan.highlighted && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <div className="flex items-center gap-1 px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full text-sm font-semibold shadow-lg">
+                    <Star className="w-4 h-4 fill-current" />
+                    Most Popular
+                  </div>
+                </div>
+              )}
+
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  {plan.name}
+                </h3>
+                <p className="text-gray-600 text-sm mb-6">{plan.description}</p>
+                <div className="mb-2">
+                  <span className="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    {plan.price}
+                  </span>
+                </div>
+                <p className="text-gray-500 text-sm">One-time payment</p>
+              </div>
+
+              <ul className="space-y-4 mb-8">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3">
+                    <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
+                      plan.highlighted
+                        ? 'bg-indigo-600'
+                        : 'bg-indigo-100'
+                    }`}>
+                      <Check className={`w-3 h-3 ${
+                        plan.highlighted ? 'text-white' : 'text-indigo-600'
+                      }`} />
+                    </div>
+                    <span className="text-gray-700">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => scrollToSection('contact')}
+                className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 ${
+                  plan.highlighted
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 hover:scale-105'
+                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                Get Started
+              </button>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Custom Quote CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mt-12 text-center"
+        >
+          <p className="text-gray-600 mb-4">
+            Need something custom? We can build anything you need.
+          </p>
+          <button
+            onClick={() => scrollToSection('contact')}
+            className="text-indigo-600 font-semibold hover:text-purple-600 transition-colors"
+          >
+            Contact us for a custom quote →
+          </button>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
