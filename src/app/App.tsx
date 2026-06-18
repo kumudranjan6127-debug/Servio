@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Navbar } from "./components/Navbar";
 import { Hero } from "./components/Hero";
 import { TrustedBy } from "./components/TrustedBy";
@@ -13,6 +14,20 @@ import { FinalCTA } from "./components/FinalCTA";
 import { Footer } from "./components/Footer";
 
 export default function App() {
+  useEffect(() => {
+    // Set robots meta tag based on environment
+    const robotsMeta = document.querySelector('meta[name="robots"]');
+    if (robotsMeta) {
+      // In development, use noindex, nofollow to prevent indexing
+      // In production, use index, follow (set in index.html)
+      if (import.meta.env.DEV) {
+        robotsMeta.setAttribute("content", "noindex, nofollow");
+      } else {
+        robotsMeta.setAttribute("content", "index, follow");
+      }
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950" style={{ fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif" }}>
       <Navbar />

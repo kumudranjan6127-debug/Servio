@@ -1,8 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useReducedMotion } from 'motion/react';
 import { FileText, Globe, Briefcase, ShoppingCart, Code, Settings } from 'lucide-react';
-import { motion, useScroll, useTransform, useReducedMotion } from 'motion/react';
-import { FileText, Globe, Briefcase, ShoppingCart, Code, Settings } from 'lucide-react';
 
 const services = [
   {
@@ -87,7 +85,7 @@ function ServiceCard({
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: reduce ? 0 : 0.6, delay: index * 0.1, ease: [0.21, 0.47, 0.32, 0.98] }}
       whileHover={reduce ? undefined : { y: -10 }}
-      className="group relative overflow-hidden rounded-3xl p-8 cursor-pointer bg-white/55 hover:bg-white/[0.65] backdrop-blur-2xl backdrop-saturate-150 border border-white/60 shadow-[0_8px_32px_-8px_rgba(79,70,229,0.25),inset_0_1px_0_0_rgba(255,255,255,0.9)] hover:shadow-[0_24px_60px_-12px_rgba(124,58,237,0.45)] transition-[background-color,box-shadow] duration-300"
+      className="group relative overflow-hidden rounded-3xl p-8 cursor-pointer bg-white/55 dark:bg-slate-900/55 hover:bg-white/[0.65] dark:hover:bg-slate-800/[0.65] backdrop-blur-2xl backdrop-saturate-150 border border-white/60 dark:border-slate-700/60 shadow-[0_8px_32px_-8px_rgba(79,70,229,0.25),inset_0_1px_0_0_rgba(255,255,255,0.9)] dark:shadow-[0_8px_32px_-8px_rgba(79,70,229,0.15),inset_0_1px_0_0_rgba(255,255,255,0.1)] hover:shadow-[0_24px_60px_-12px_rgba(124,58,237,0.45)] dark:hover:shadow-[0_24px_60px_-12px_rgba(124,58,237,0.3)] transition-[background-color,box-shadow] duration-300"
     >
       {/* Accent glaze — each card refracts its own hue */}
       <div
@@ -99,7 +97,7 @@ function ServiceCard({
       <div
         aria-hidden
         style={ringStyle}
-        className="pointer-events-none absolute inset-0 rounded-3xl p-px bg-gradient-to-br from-white/80 via-white/20 to-indigo-200/50"
+        className="pointer-events-none absolute inset-0 rounded-3xl p-px bg-gradient-to-br from-white/80 via-white/20 to-indigo-200/50 dark:from-white/20 dark:via-slate-400/10 dark:to-indigo-300/20"
       />
 
       {/* Cursor-following radial spotlight */}
@@ -117,13 +115,13 @@ function ServiceCard({
         aria-hidden
         className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl motion-reduce:hidden"
       >
-        <div className="absolute -inset-y-1/2 -left-1/3 w-1/3 rotate-12 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-[500%] transition-transform duration-700 ease-out" />
+        <div className="absolute -inset-y-1/2 -left-1/3 w-1/3 rotate-12 bg-gradient-to-r from-transparent via-white/40 dark:via-white/20 to-transparent -translate-x-full group-hover:translate-x-[500%] transition-transform duration-700 ease-out" />
       </div>
 
       {/* Editorial index badge */}
       <span
         aria-hidden
-        className="absolute top-5 right-6 text-xs font-semibold tracking-widest text-indigo-400/70 select-none"
+        className="absolute top-5 right-6 text-xs font-semibold tracking-widest text-indigo-400/70 dark:text-indigo-300/70 select-none"
       >
         0{index + 1}
       </span>
@@ -136,7 +134,7 @@ function ServiceCard({
             className={`absolute -inset-2 rounded-2xl bg-gradient-to-br ${service.color} opacity-40 blur-xl group-hover:opacity-70 transition-opacity duration-500`}
           />
           <div
-            className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${service.color} ring-1 ring-white/40 shadow-lg flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 will-change-transform`}
+            className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${service.color} ring-1 ring-white/40 dark:ring-white/20 shadow-lg flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 will-change-transform`}
           >
             <span
               aria-hidden
@@ -146,10 +144,10 @@ function ServiceCard({
           </div>
         </div>
 
-        <h3 className="text-xl font-bold text-gray-900 mb-3">{service.title}</h3>
-        <p className="text-gray-700 leading-relaxed">{service.description}</p>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{service.title}</h3>
+        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{service.description}</p>
 
-        <div className="mt-6 flex items-center font-semibold text-indigo-600 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+        <div className="mt-6 flex items-center font-semibold text-indigo-600 dark:text-indigo-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
           <span className="text-sm">Learn more</span>
           <svg
             className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
@@ -174,17 +172,15 @@ export function Services() {
   const lineScale = useTransform(scrollYProgress, [0.05, 0.22], [0, 1]);
 
   return (
-    <section id="services" className="py-20 md:py-32 bg-white dark:bg-slate-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <section
       ref={ref}
       id="services"
-      className="relative isolate overflow-hidden py-20 md:py-32 bg-white"
+      className="relative isolate overflow-hidden py-20 md:py-32 bg-white dark:bg-slate-950"
     >
       {/* Base wash — gives the frost something colored to refract, fades into neighbors */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white via-indigo-50/40 to-white"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white via-indigo-50/40 to-white dark:from-slate-950 dark:via-indigo-950/20 dark:to-slate-950"
       />
 
       {/* Aurora parallax wrapper — a single transform drives all three blobs */}
@@ -194,17 +190,17 @@ export function Services() {
         className="pointer-events-none absolute inset-0 -z-10 will-change-transform"
       >
         <motion.div
-          className="absolute -top-32 -left-24 w-[640px] h-[640px] rounded-full bg-gradient-to-br from-indigo-400/40 to-purple-400/30 blur-3xl"
+          className="absolute -top-32 -left-24 w-[640px] h-[640px] rounded-full bg-gradient-to-br from-indigo-400/40 to-purple-400/30 dark:from-indigo-500/20 dark:to-purple-500/15 blur-3xl"
           animate={reduce ? undefined : { x: [0, 40, -20, 0], y: [0, -30, 20, 0], scale: [1, 1.08, 0.96, 1] }}
           transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute top-1/3 right-[-120px] w-[560px] h-[560px] rounded-full bg-gradient-to-br from-purple-400/35 to-fuchsia-300/25 blur-3xl"
+          className="absolute top-1/3 right-[-120px] w-[560px] h-[560px] rounded-full bg-gradient-to-br from-purple-400/35 to-fuchsia-300/25 dark:from-purple-500/15 dark:to-fuchsia-400/10 blur-3xl"
           animate={reduce ? undefined : { x: [0, -50, 30, 0], y: [0, 25, -15, 0], scale: [1, 1.06, 0.97, 1] }}
           transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute bottom-[-160px] left-1/3 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-cyan-400/35 to-teal-300/25 blur-3xl"
+          className="absolute bottom-[-160px] left-1/3 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-cyan-400/35 to-teal-300/25 dark:from-cyan-500/15 dark:to-teal-400/10 blur-3xl"
           animate={reduce ? undefined : { x: [0, 30, -40, 0], y: [0, -20, 30, 0], scale: [1, 1.07, 0.95, 1] }}
           transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }}
         />
@@ -253,49 +249,6 @@ export function Services() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {services.map((service, index) => (
-            <motion.div
-              key={service.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ y: -8 }}
-              className="group relative bg-white dark:bg-slate-900 rounded-2xl p-8 border-2 border-gray-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-xl dark:hover:shadow-indigo-900/20 transition-all duration-300 cursor-pointer"
-            >
-              {/* Gradient overlay on hover */}
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-              <div className="relative z-10">
-                <div className={`w-14 h-14 bg-gradient-to-br ${service.color} rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                  <service.icon className="w-7 h-7 text-white" />
-                </div>
-
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                  {service.title}
-                </h3>
-
-                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                  {service.description}
-                </p>
-
-                <div className="mt-6 flex items-center text-indigo-600 dark:text-indigo-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="text-sm">Learn more</span>
-                  <svg
-                    className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </motion.div>
             <ServiceCard key={service.title} service={service} index={index} reduce={reduce} />
           ))}
         </div>
