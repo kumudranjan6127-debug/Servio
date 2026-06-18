@@ -22,10 +22,24 @@ const ROUTES = ['/', '404.html'];
 function startServer(port) {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
-      let filePath = path.join(DIST_DIR, req.url === '/' ? 'index.html' : req.url);
+      // Normalize the URL pathname to prevent directory traversal
+      let urlPath = new URL(req.url, `http://localhost:${port}`).pathname;
+      urlPath = path.normalize(urlPath);
       
-      if (req.url === '/404.html') {
-        filePath = path.join(DIST_DIR, 'index.html');
+      // Default to index.html for root or 404.html
+      if (urlPath === '/' || urlPath === '/404.html') {
+        urlPath = '/index.html';
+      }
+
+      // Resolve the full file path
+      let filePath = path.resolve(DIST_DIR, '.' + urlPath);
+      const distDirResolved = path.resolve(DIST_DIR);
+
+      // Validate that the resolved path is within DIST_DIR (prevent directory traversal)
+      if (!filePath.startsWith(distDirResolved)) {
+        res.writeHead(403);
+        res.end('Forbidden');
+        return;
       }
 
       fs.readFile(filePath, (err, data) => {
@@ -79,6 +93,9 @@ async function prerender() {
     browser = await puppeteer.launch({ headless: 'new' });
     console.log('[Prerender] Browser launched');
 
+    // Track failed routes for error reporting
+    const failedRoutes = [];
+
     // Pre-render each route
     for (const route of ROUTES) {
       // Skip 404.html as it's not a real route
@@ -116,7 +133,13 @@ async function prerender() {
         await page.close();
       } catch (error) {
         console.error(`[Prerender] Error rendering ${route}:`, error.message);
+        failedRoutes.push(route);
       }
+    }
+
+    // Check for failed routes and exit with error if any occurred
+    if (failedRoutes.length > 0) {
+      throw new Error(`Pre-rendering failed for routes: ${failedRoutes.join(', ')}`);
     }
 
     console.log('[Prerender] ✓ Pre-rendering completed successfully');
