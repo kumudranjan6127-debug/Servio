@@ -1,19 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Menu, X, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useThrottledScroll } from '../hooks/useThrottledScroll';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // Use throttled scroll handler to prevent excessive re-renders (max once every 150ms)
+  useThrottledScroll((scrollY) => {
+    setIsScrolled(scrollY > 20);
+  }, 150);
 
   useEffect(() => {
     // Check for saved theme preference or system preference
