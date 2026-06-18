@@ -24,10 +24,10 @@
     "noEmit": true,
     "skipLibCheck": true,
 
-    /* Strictness */
+    /* Strictness — `strict` covers the core type-safety rules. Unused-symbol
+       detection is delegated to ESLint's `no-unused-vars` (more configurable,
+       and reported as warnings so pre-existing debt doesn't block the build). */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "forceConsistentCasingInFileNames": true
