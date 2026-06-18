@@ -1,4 +1,11 @@
-import { useEffect, useRef } from "react";
+import {
+  Component,
+  Suspense,
+  lazy,
+  useEffect,
+  useRef,
+  type ReactNode,
+} from "react";
 import {
   AnimatePresence,
   motion,
@@ -7,6 +14,23 @@ import {
   type Variants,
 } from "motion/react";
 import { SPLASH_Z_INDEX, type LoadingPhase } from "../constants/splash";
+
+// Heavy Three.js scene is code-split so it never blocks the splash's first paint.
+const SplashCanvas = lazy(() => import("./splash/SplashCanvas"));
+
+/** If WebGL fails to init, render nothing so the CSS-only splash remains. */
+class CanvasErrorBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 
 interface SplashScreenProps {
   phase: LoadingPhase;
@@ -162,9 +186,19 @@ export function SplashScreen({
         />
       </div>
 
+      {/* WebGL liquid-glass layer — code-split, skipped under reduced motion,
+          and gracefully absent if WebGL fails (CSS glow above remains). */}
+      {!r && (
+        <CanvasErrorBoundary>
+          <Suspense fallback={null}>
+            <SplashCanvas progress={progress} isReady={phase === "ready"} />
+          </Suspense>
+        </CanvasErrorBoundary>
+      )}
+
       <motion.div
         variants={cardVariants}
-        className="relative flex w-full max-w-sm flex-col items-center gap-5 rounded-3xl border border-white/10 bg-white/5 px-6 py-9 text-center shadow-2xl shadow-black/40 backdrop-blur-xl md:gap-6 md:px-10 md:py-12"
+        className="relative z-10 flex w-full max-w-sm flex-col items-center gap-5 rounded-3xl border border-white/10 bg-white/5 px-6 py-9 text-center shadow-2xl shadow-black/40 backdrop-blur-xl md:gap-6 md:px-10 md:py-12"
       >
         {isError ? (
           <>
