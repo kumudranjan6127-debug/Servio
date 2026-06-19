@@ -1,5 +1,14 @@
 import { motion } from "motion/react";
 import { Quote, Star } from "lucide-react";
+import priya from "../../assets/testimonials/priya.jpg";
+import arjun from "../../assets/testimonials/arjun.jpg";
+import ananya from "../../assets/testimonials/ananya.jpg";
+import rohan from "../../assets/testimonials/rohan.jpg";
+import sneha from "../../assets/testimonials/sneha.jpg";
+import vikram from "../../assets/testimonials/vikram.jpg";
+import aishwarya from "../../assets/testimonials/aishwarya.jpg";
+import karan from "../../assets/testimonials/karan.jpg";
+import meera from "../../assets/testimonials/meera.jpg";
 
 type Testimonial = {
   id: number;
@@ -14,57 +23,84 @@ type Testimonial = {
 const testimonials: Testimonial[] = [
   {
     id: 1,
-    name: "Sarah Chen",
-    role: "CEO",
-    company: "TechStart Inc.",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&auto=format",
-    rating: 5,
-    text: "Servio transformed our online presence completely. Our new website loads in under 2 seconds and our conversion rate jumped by 47% within the first month. The team was incredibly professional and delivered ahead of schedule.",
-  },
-  {
-    id: 2,
-    name: "Marcus Thompson",
-    role: "Founder",
-    company: "Bloom Digital",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&auto=format",
-    rating: 5,
-    text: "Working with Servio was seamless from start to finish. They took our rough ideas and turned them into a stunning e-commerce store that our customers love. Revenue increased 3x in just 60 days after launch.",
-  },
-  {
-    id: 3,
     name: "Priya Mehta",
     role: "Creative Director",
     company: "Artisan Studio",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&auto=format",
+    avatar: priya,
     rating: 5,
     text: "The portfolio website Servio built for us is breathtaking. Every client who visits comments on how impressive and polished it looks. The attention to micro-interactions and detail is unmatched.",
   },
   {
+    id: 2,
+    name: "Arjun Sharma",
+    role: "CEO",
+    company: "TechStart India",
+    avatar: arjun,
+    rating: 5,
+    text: "Servio transformed our online presence completely. Our new website loads in under 2 seconds and our conversion rate jumped by 47% within the first month. The team was incredibly professional and delivered ahead of schedule.",
+  },
+  {
+    id: 3,
+    name: "Ananya Iyer",
+    role: "Founder",
+    company: "Bloom Digital",
+    avatar: ananya,
+    rating: 5,
+    text: "Working with Servio was seamless from start to finish. They took our rough ideas and turned them into a stunning e-commerce store that our customers love. Revenue increased 3x in just 60 days after launch.",
+  },
+  {
     id: 4,
-    name: "James Rivera",
+    name: "Rohan Gupta",
     role: "COO",
     company: "CloudSync Labs",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&auto=format",
+    avatar: rohan,
     rating: 5,
     text: "We needed a complex SaaS dashboard built quickly. Servio delivered in 3 weeks with clean code, excellent documentation, and ongoing support that's been invaluable. Highly recommend.",
   },
   {
     id: 5,
-    name: "Elena Rodriguez",
+    name: "Sneha Reddy",
     role: "Marketing Lead",
     company: "Nova Retail",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&auto=format",
+    avatar: sneha,
     rating: 5,
     text: "Our campaign landing pages have never converted better. Servio's design sense paired with rock-solid performance gave us an instant lift in qualified leads. Truly a partner, not just a vendor.",
   },
   {
     id: 6,
-    name: "David Okafor",
+    name: "Vikram Nair",
     role: "CTO",
     company: "Finch Analytics",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&auto=format",
+    avatar: vikram,
     rating: 5,
     text: "Clean architecture, thoughtful APIs, and a UI our customers genuinely enjoy using. Servio understood our product deeply and shipped exactly what we needed, on time and on budget.",
+  },
+  {
+    id: 7,
+    name: "Aishwarya Rao",
+    role: "Product Manager",
+    company: "Lotus Apps",
+    avatar: aishwarya,
+    rating: 5,
+    text: "From discovery to launch, Servio felt like an extension of our own team. Our app's onboarding flow is now smooth and intuitive, and user retention has climbed steadily ever since.",
+  },
+  {
+    id: 8,
+    name: "Karan Malhotra",
+    role: "Founder",
+    company: "Vertex Studio",
+    avatar: karan,
+    rating: 5,
+    text: "They rebuilt our marketing site from scratch and the difference is night and day. It's fast, beautiful, and finally reflects the quality of our work. Bookings are up 60%.",
+  },
+  {
+    id: 9,
+    name: "Meera Krishnan",
+    role: "Head of Design",
+    company: "Saffron Labs",
+    avatar: meera,
+    rating: 5,
+    text: "As a design-led company we're picky, and Servio exceeded our bar. Every spacing, transition, and state was considered. The handoff and code quality were equally impressive.",
   },
 ];
 
@@ -125,13 +161,20 @@ function MarqueeRow({
   items,
   direction = "normal",
   duration = "44s",
+  label,
 }: {
   items: Testimonial[];
   direction?: "normal" | "reverse";
   duration?: string;
+  label: string;
 }) {
   return (
-    <div className="testimonial-marquee group relative overflow-hidden">
+    <div
+      className="testimonial-marquee group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+      role="group"
+      tabIndex={0}
+      aria-label={`${label}. Hover or focus to pause the auto-scrolling. Use arrow keys to scroll when motion is reduced.`}
+    >
       {/* Edge fade masks */}
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-[#0f0f1a] to-transparent sm:w-28" />
       <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#1a1040] to-transparent sm:w-28" />
@@ -154,8 +197,8 @@ function MarqueeRow({
 }
 
 export function Testimonials() {
-  const firstRow = testimonials.slice(0, 3);
-  const secondRow = testimonials.slice(3);
+  const firstRow = testimonials.slice(0, 5);
+  const secondRow = testimonials.slice(5);
 
   return (
     <section
@@ -186,8 +229,8 @@ export function Testimonials() {
       </div>
 
       <div className="flex flex-col gap-6">
-        <MarqueeRow items={firstRow} direction="normal" duration="44s" />
-        <MarqueeRow items={secondRow} direction="reverse" duration="52s" />
+        <MarqueeRow items={firstRow} direction="normal" duration="52s" label="Client testimonials, row one" />
+        <MarqueeRow items={secondRow} direction="reverse" duration="44s" label="Client testimonials, row two" />
       </div>
     </section>
   );
