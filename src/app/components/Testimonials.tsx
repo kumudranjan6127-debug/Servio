@@ -1,8 +1,17 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { motion } from "motion/react";
+import { Quote, Star } from "lucide-react";
 
-const testimonials = [
+type Testimonial = {
+  id: number;
+  name: string;
+  role: string;
+  company: string;
+  avatar: string;
+  rating: number;
+  text: string;
+};
+
+const testimonials: Testimonial[] = [
   {
     id: 1,
     name: "Sarah Chen",
@@ -39,119 +48,146 @@ const testimonials = [
     rating: 5,
     text: "We needed a complex SaaS dashboard built quickly. Servio delivered in 3 weeks with clean code, excellent documentation, and ongoing support that's been invaluable. Highly recommend.",
   },
+  {
+    id: 5,
+    name: "Elena Rodriguez",
+    role: "Marketing Lead",
+    company: "Nova Retail",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&auto=format",
+    rating: 5,
+    text: "Our campaign landing pages have never converted better. Servio's design sense paired with rock-solid performance gave us an instant lift in qualified leads. Truly a partner, not just a vendor.",
+  },
+  {
+    id: 6,
+    name: "David Okafor",
+    role: "CTO",
+    company: "Finch Analytics",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&auto=format",
+    rating: 5,
+    text: "Clean architecture, thoughtful APIs, and a UI our customers genuinely enjoy using. Servio understood our product deeply and shipped exactly what we needed, on time and on budget.",
+  },
 ];
 
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex gap-1" role="img" aria-label={`Rated ${rating} out of 5 stars`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          className={`w-4 h-4 ${
+            i < rating ? "fill-amber-400 text-amber-400" : "fill-white/10 text-white/20"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+  return (
+    <article className="group/card relative w-[340px] sm:w-[400px] shrink-0 rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-indigo-400/40 hover:bg-white/[0.08] hover:shadow-2xl hover:shadow-indigo-500/20">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/0 to-cyan-500/0 opacity-0 transition-opacity duration-300 group-hover/card:from-indigo-500/10 group-hover/card:to-cyan-500/10 group-hover/card:opacity-100"
+      />
+
+      <Quote
+        aria-hidden
+        className="absolute right-6 top-6 h-10 w-10 rotate-180 text-indigo-400/30 transition-colors duration-300 group-hover/card:text-indigo-400/60"
+        fill="currentColor"
+      />
+
+      <div className="relative">
+        <StarRating rating={testimonial.rating} />
+
+        <p className="mt-5 text-white/85 leading-relaxed">{testimonial.text}</p>
+
+        <div className="mt-7 flex items-center gap-4 border-t border-white/10 pt-5">
+          <img
+            src={testimonial.avatar}
+            alt={testimonial.name}
+            loading="lazy"
+            className="h-12 w-12 rounded-full border-2 border-indigo-400/50 object-cover"
+          />
+          <div>
+            <div className="font-bold text-white">{testimonial.name}</div>
+            <div className="text-sm text-gray-400">
+              {testimonial.role} · {testimonial.company}
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function MarqueeRow({
+  items,
+  direction = "normal",
+  duration = "44s",
+}: {
+  items: Testimonial[];
+  direction?: "normal" | "reverse";
+  duration?: string;
+}) {
+  return (
+    <div className="testimonial-marquee group relative overflow-hidden">
+      {/* Edge fade masks */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-[#0f0f1a] to-transparent sm:w-28" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#1a1040] to-transparent sm:w-28" />
+
+      <div
+        className="testimonial-marquee-track flex w-max gap-6"
+        style={
+          {
+            "--marquee-duration": duration,
+            "--marquee-direction": direction,
+          } as React.CSSProperties
+        }
+      >
+        {[...items, ...items].map((testimonial, i) => (
+          <TestimonialCard key={`${testimonial.id}-${i}`} testimonial={testimonial} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Testimonials() {
-  const [current, setCurrent] = useState(0);
-  const [direction, setDirection] = useState(1);
-
-  const prev = () => {
-    setDirection(-1);
-    setCurrent((c) => (c - 1 + testimonials.length) % testimonials.length);
-  };
-
-  const next = () => {
-    setDirection(1);
-    setCurrent((c) => (c + 1) % testimonials.length);
-  };
+  const firstRow = testimonials.slice(0, 3);
+  const secondRow = testimonials.slice(3);
 
   return (
-    <section aria-labelledby="testimonials-title" className="py-20 md:py-32 bg-gradient-to-br from-[#0f0f1a] to-[#1a1040] overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section
+      aria-labelledby="testimonials-title"
+      className="overflow-hidden bg-gradient-to-br from-[#0f0f1a] to-[#1a1040] py-20 md:py-32"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="mb-16 text-center"
         >
-          <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">
+          <span className="text-sm font-semibold uppercase tracking-wider text-cyan-400">
             Testimonials
           </span>
-          <h2 id="testimonials-title" className="text-4xl md:text-5xl font-bold text-white mt-3 mb-4">
+          <h2 id="testimonials-title" className="mb-4 mt-3 text-4xl font-bold text-white md:text-5xl">
             What Our{" "}
             <span className="bg-gradient-to-r from-[#4F46E5] to-[#06B6D4] bg-clip-text text-transparent">
               Clients Say
             </span>
           </h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+          <p className="mx-auto max-w-2xl text-lg text-gray-400">
             Don't just take our word for it — hear from the businesses we've helped grow.
           </p>
         </motion.div>
+      </div>
 
-        {/* Carousel */}
-        <div className="relative max-w-4xl mx-auto">
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={current}
-              custom={direction}
-              initial={{ opacity: 0, x: direction * 60 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -60 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-              className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12"
-            >
-              {/* Stars */}
-              <div className="flex gap-1 mb-6">
-                {Array.from({ length: testimonials[current].rating }).map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-
-              {/* Quote */}
-              <p className="text-white/90 text-lg md:text-xl leading-relaxed mb-8">
-                "{testimonials[current].text}"
-              </p>
-
-              {/* Author */}
-              <div className="flex items-center gap-4">
-                <img
-                  src={testimonials[current].avatar}
-                  alt={testimonials[current].name}
-                  className="w-14 h-14 rounded-full object-cover border-2 border-indigo-400/50"
-                />
-                <div>
-                  <div className="font-bold text-white">{testimonials[current].name}</div>
-                  <div className="text-gray-400 text-sm">
-                    {testimonials[current].role} · {testimonials[current].company}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-8">
-            <div className="flex gap-2">
-              {testimonials.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setDirection(i > current ? 1 : -1); setCurrent(i); }}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    i === current ? "w-8 bg-indigo-500" : "w-2 bg-white/20 hover:bg-white/40"
-                  }`}
-                  aria-label={`Go to testimonial ${i + 1}`}
-                />
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={prev}
-                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
-                aria-label="Previous"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={next}
-                className="w-10 h-10 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
-                aria-label="Next"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-col gap-6">
+        <MarqueeRow items={firstRow} direction="normal" duration="44s" />
+        <MarqueeRow items={secondRow} direction="reverse" duration="52s" />
       </div>
     </section>
   );
