@@ -9,6 +9,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ currentUser: null, loading: true });
 
+export function useAuth() {
+    return useContext(AuthContext);
+}
+
 interface AuthProviderProps {
     children: ReactNode;
 }
@@ -31,10 +35,5 @@ export function AuthProvider({ children }: AuthProviderProps) {
         loading,
     };
 
-    return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
-}
-
-// Export the hook as a property of the provider
-AuthProvider.useAuth = function () {
-    return useContext(AuthContext);
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

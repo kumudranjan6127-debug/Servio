@@ -10,7 +10,7 @@ import { getAuth } from "firebase/auth";
 // It's highly recommended to move this configuration to environment variables
 // to avoid exposing sensitive keys in your source code.
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    apiKey: "AIzaSyCzdV1wmq7eOdAgyElDeDQV5bRzB3fBlUs",
     authDomain: "servio-0.firebaseapp.com",
     projectId: "servio-0",
     storageBucket: "servio-0.firebasestorage.app",
