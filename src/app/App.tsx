@@ -9,7 +9,6 @@ import { Process } from "./components/Process";
 import { Portfolio } from "./components/Portfolio";
 import { Pricing } from "./components/Pricing";
 import { WhyChoose } from "./components/WhyChoose";
-import { Testimonials } from "./components/Testimonials";
 import { QuoteForm } from "./components/QuoteForm";
 import { FAQ } from "./components/FAQ";
 import { FinalCTA } from "./components/FinalCTA";
@@ -38,7 +37,6 @@ function LandingPage() {
         <Portfolio />
         <Pricing />
         <WhyChoose />
-        <Testimonials />
         <QuoteForm />
         <FAQ />
         <FinalCTA />
