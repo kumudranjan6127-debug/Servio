@@ -46,10 +46,10 @@ export function QuoteForm() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [_formError, setFormError] = useState<string | null>(null);
   // Bumped on every surfaced form error so the live region re-announces even
   // when the message text is identical to the previous one (e.g. blocked twice).
-  const [errorNonce, setErrorNonce] = useState(0);
+  const [_errorNonce, setErrorNonce] = useState(0);
 
   // Honeypot value lives outside React state (read on submit via ref) so it
   // never round-trips through the controlled inputs a human interacts with.

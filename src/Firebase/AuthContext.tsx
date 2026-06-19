@@ -1,5 +1,3 @@
-/** @refresh reset */
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from './firebase';
@@ -10,10 +8,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({ currentUser: null, loading: true });
-
-export function useAuth() {
-    return useContext(AuthContext);
-}
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -38,4 +32,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+}
+
+// Export the hook as a property of the provider
+AuthProvider.useAuth = function () {
+    return useContext(AuthContext);
 }
