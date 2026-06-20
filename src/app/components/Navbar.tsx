@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, Moon, Sun } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useThrottledScroll } from '../hooks/useThrottledScroll';
 import { useAuth } from '../../Firebase/useAuth';
 import { auth } from '../../Firebase/firebase';
@@ -13,6 +13,7 @@ export function Navbar() {
   const { currentUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const reduce = useReducedMotion();
 
   // Use throttled scroll handler to prevent excessive re-renders (max once every 150ms)
   useThrottledScroll((scrollY) => {
@@ -62,11 +63,11 @@ export function Navbar() {
       navigate('/');
       // Use a timeout to allow the landing page to render before scrolling.
       setTimeout(() => {
-        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
       }, 100);
     } else {
       // If we are already on the landing page, scroll immediately.
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
     }
   };
 
@@ -194,9 +195,10 @@ export function Navbar() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, height: 0 }}
+            animate={reduce ? { opacity: 1 } : { opacity: 1, height: 'auto' }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, height: 0 }}
+            transition={{ duration: reduce ? 0 : 0.2 }}
             className="md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-gray-200 dark:border-slate-700"
           >
             <div className="px-4 py-4 space-y-3">

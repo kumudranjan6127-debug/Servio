@@ -217,3 +217,28 @@
     animation: none;
   }
 }
+
+/**
+ * Site-wide reduced-motion gate.
+ *
+ * Honors the user's OS-level `prefers-reduced-motion: reduce` setting for
+ * everyone — including users with vestibular disorders — by neutralizing
+ * CSS-driven animation, transitions, and smooth scrolling across the whole
+ * site (Tailwind `animate-pulse`, hover transforms, the `html` smooth scroll
+ * above, etc.). JS-driven motion (motion/react) is gated separately in each
+ * component via the `useReducedMotion()` hook.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto !important;
+  }
+}

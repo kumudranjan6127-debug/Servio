@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Quote, Star } from "lucide-react";
 import priya from "../../assets/testimonials/priya.jpg";
 import arjun from "../../assets/testimonials/arjun.jpg";
@@ -197,6 +197,7 @@ function MarqueeRow({
 }
 
 export function Testimonials() {
+  const reduce = useReducedMotion();
   const firstRow = testimonials.slice(0, 5);
   const secondRow = testimonials.slice(5);
 
@@ -207,10 +208,10 @@ export function Testimonials() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
+          whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: reduce ? 0 : 0.6 }}
           className="mb-16 text-center"
         >
           <span className="text-sm font-semibold uppercase tracking-wider text-cyan-400">
