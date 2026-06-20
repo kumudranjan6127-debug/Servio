@@ -15,6 +15,7 @@ import { FAQ } from "./components/FAQ";
 import { FinalCTA } from "./components/FinalCTA";
 import { Footer } from "./components/Footer";
 import NotFound from "./components/NotFound";
+import { ThemeProvider } from "./hooks/useTheme";
 import { SplashScreen } from "./components/SplashScreen";
 import { AuthProvider } from "../Firebase/AuthContext";
 import { SignIn } from "../Firebase/SignIn";
@@ -119,6 +120,7 @@ export default function App() {
         aria-hidden={!loading.isReady || undefined}
       >
         <BrowserRouter>
+          <ThemeProvider>
           <AuthProvider>
             <Routes>
               <Route path="/" element={<LandingPage />} />
@@ -142,6 +144,7 @@ export default function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
+          </ThemeProvider>
         </BrowserRouter>
       </motion.div>
 

@@ -1,7 +1,5 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
-
     /* Language and environment */
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
@@ -17,7 +15,6 @@
     "resolveJsonModule": true,
 
     /* Path alias — mirrors the `@` alias in vite.config.ts */
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },

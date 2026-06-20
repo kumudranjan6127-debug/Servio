@@ -1,46 +1,49 @@
-import { useState, useEffect } from 'react';
+import {
+  createElement,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 
-/**
- * Custom hook for managing theme state globally across the application.
- * Handles localStorage persistence and system preference detection.
- * 
- * @returns {Object} Theme state and toggle function
- * @returns {boolean} isDarkMode - Current theme mode
- * @returns {Function} toggleTheme - Function to switch between light and dark modes
- */
-export function useTheme() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+interface ThemeContextValue {
+  isDarkMode: boolean;
+  toggleTheme: () => void;
+}
 
-  // Initialize theme on mount
+const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+function getInitialTheme(): boolean {
+  try {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  } catch {
+    return false;
+  }
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  // Lazy initializer reads localStorage synchronously — no FOUC on first render.
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(getInitialTheme);
+
+  // Sole owner of the `dark` class and localStorage value.
   useEffect(() => {
-    // Check for saved theme preference or system preference
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const isDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
-    setIsDarkMode(isDark);
-    applyTheme(isDark);
-    setIsInitialized(true);
+  const toggleTheme = useCallback(() => {
+    setIsDarkMode((prev) => !prev);
   }, []);
 
-  const applyTheme = (isDark: boolean) => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
+  return createElement(ThemeContext.Provider, { value: { isDarkMode, toggleTheme } }, children);
+}
 
-  const toggleTheme = () => {
-    setIsDarkMode((prevMode) => {
-      const newMode = !prevMode;
-      applyTheme(newMode);
-      return newMode;
-    });
-  };
-
-  return { isDarkMode, toggleTheme, isInitialized };
+export function useTheme(): ThemeContextValue {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used inside <ThemeProvider>');
+  return ctx;
 }
