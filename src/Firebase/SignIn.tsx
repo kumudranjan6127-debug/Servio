@@ -27,7 +27,7 @@ export function SignIn() {
         setError('');
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            navigate('/');
+            navigate('/dashboard');
         } catch (err: unknown) {
             if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
                 setError((err as { message: string }).message);
@@ -42,7 +42,7 @@ export function SignIn() {
         try {
             const provider = new GoogleAuthProvider();
             await signInWithPopup(auth, provider);
-            navigate('/');
+            navigate('/dashboard');
         } catch (err: unknown) {
             if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
                 setError((err as { message: string }).message);

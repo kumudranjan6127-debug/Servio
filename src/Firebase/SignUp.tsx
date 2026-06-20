@@ -27,7 +27,7 @@ export function SignUp() {
         setError('');
         try {
             await createUserWithEmailAndPassword(auth, email, password);
-            navigate('/');
+            navigate('/dashboard');
         } catch (err: unknown) {
             if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
                 setError((err as { message: string }).message);
@@ -42,7 +42,7 @@ export function SignUp() {
         try {
             const provider = new GoogleAuthProvider();
             await signInWithPopup(auth, provider);
-            navigate('/');
+            navigate('/dashboard');
         } catch (err: unknown) {
             if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
                 setError((err as { message: string }).message);

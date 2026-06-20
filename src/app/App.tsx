@@ -20,6 +20,14 @@ import { AuthProvider } from "../Firebase/AuthContext";
 import { SignIn } from "../Firebase/SignIn";
 import { SignUp } from "../Firebase/SignUp";
 import { useAppLoading } from "./hooks/useAppLoading";
+import { ProtectedRoute } from "../dashboard/components/ProtectedRoute";
+import { DashboardLayout } from "../dashboard/components/DashboardLayout";
+import { DashboardOverview } from "../dashboard/pages/DashboardOverview";
+import { ProjectProgress } from "../dashboard/pages/ProjectProgress";
+import { UpdatesFeed } from "../dashboard/pages/UpdatesFeed";
+import { PaymentManagement } from "../dashboard/pages/PaymentManagement";
+import { InvoiceManagement } from "../dashboard/pages/InvoiceManagement";
+import { ProjectResources } from "../dashboard/pages/ProjectResources";
 
 const REVEAL_EASE: [number, number, number, number] = [0.4, 0, 0.2, 1];
 
@@ -116,6 +124,21 @@ export default function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignUp />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<DashboardOverview />} />
+                <Route path="progress" element={<ProjectProgress />} />
+                <Route path="updates" element={<UpdatesFeed />} />
+                <Route path="payments" element={<PaymentManagement />} />
+                <Route path="invoices" element={<InvoiceManagement />} />
+                <Route path="resources" element={<ProjectResources />} />
+              </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
