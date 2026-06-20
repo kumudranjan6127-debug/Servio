@@ -1,5 +1,11 @@
 import { useEffect } from "react";
-import { Routes, Route } from "react-router";
+import { Routes, Route, useLocation } from "react-router-dom";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 import { Navbar } from "./components/Navbar";
 import { Hero } from "./components/Hero";
 import { TrustedBy } from "./components/TrustedBy";
@@ -14,6 +20,7 @@ import { FAQ } from "./components/FAQ";
 import { FinalCTA } from "./components/FinalCTA";
 import { Footer } from "./components/Footer";
 import NotFound from "./components/NotFound";
+import { ServiceDetailPage } from "./components/ServiceDetailPage";
 
 function LandingPage() {
   return (
@@ -60,8 +67,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950" style={{ fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif" }}>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/services/:slug" element={<ServiceDetailPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
