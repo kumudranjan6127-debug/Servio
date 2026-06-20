@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { ExternalLink } from 'lucide-react';
 
 // A web-development workstation (code + a site in the browser) — depicts the
@@ -69,6 +69,7 @@ const projects = [
 const categories = ['All', 'Business', 'Portfolio', 'E-Commerce', 'SaaS'];
 
 export function Portfolio() {
+  const reduce = useReducedMotion();
   const [activeCategory, setActiveCategory] = useState('All');
 
   const filteredProjects =
@@ -80,10 +81,10 @@ export function Portfolio() {
     <section id="portfolio" aria-labelledby="portfolio-title" className="py-20 md:py-32 bg-white dark:bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
+          whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: reduce ? 0 : 0.6 }}
           className="text-center mb-12"
         >
           <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-sm uppercase tracking-wider">
@@ -121,18 +122,18 @@ export function Portfolio() {
         <AnimatePresence mode="wait">
           <motion.div
             key={activeCategory}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5 }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
+            animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -20 }}
+            transition={{ duration: reduce ? 0 : 0.5 }}
             className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             {filteredProjects.map((project, index) => (
               <motion.div
                 key={project.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+                transition={{ duration: reduce ? 0 : 0.5, delay: index * 0.1 }}
                 className="group relative bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-lg dark:shadow-slate-900/50 hover:shadow-2xl dark:hover:shadow-indigo-900/20 transition-all duration-300"
               >
                 {/* Image */}
