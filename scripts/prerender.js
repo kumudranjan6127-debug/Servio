@@ -90,7 +90,7 @@ async function prerender() {
     server = await startServer(PORT);
 
     // Launch browser
-    browser = await puppeteer.launch({ headless: 'new' });
+    browser = await puppeteer.launch({ headless: true });
     console.log('[Prerender] Browser launched');
 
     // Track failed routes for error reporting
