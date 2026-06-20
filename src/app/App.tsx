@@ -29,6 +29,8 @@ import { UpdatesFeed } from "../dashboard/pages/UpdatesFeed";
 import { PaymentManagement } from "../dashboard/pages/PaymentManagement";
 import { InvoiceManagement } from "../dashboard/pages/InvoiceManagement";
 import { ProjectResources } from "../dashboard/pages/ProjectResources";
+import { ProjectEstimation } from "../dashboard/pages/ProjectEstimation";
+import { PricingConfig } from "../dashboard/pages/PricingConfig";
 
 const REVEAL_EASE: [number, number, number, number] = [0.4, 0, 0.2, 1];
 
@@ -140,6 +142,8 @@ export default function App() {
                 <Route path="payments" element={<PaymentManagement />} />
                 <Route path="invoices" element={<InvoiceManagement />} />
                 <Route path="resources" element={<ProjectResources />} />
+              <Route path="estimation" element={<ProjectEstimation />} />
+              <Route path="pricing-config" element={<PricingConfig />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
