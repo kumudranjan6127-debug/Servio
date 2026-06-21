@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from './firebase';
+import { notifyWelcome } from '../dashboard/notifications/notificationTriggers';
 import { Home, Check, X, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import {
   analysePassword,
@@ -245,7 +246,8 @@ export function SignUp() {
     }
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      notifyWelcome(user.uid, user.displayName ?? user.email ?? 'there');
       navigate('/dashboard');
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
@@ -260,7 +262,8 @@ export function SignUp() {
     setError('');
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const { user } = await signInWithPopup(auth, provider);
+      notifyWelcome(user.uid, user.displayName ?? user.email ?? 'there');
       navigate('/dashboard');
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
