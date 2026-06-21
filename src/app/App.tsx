@@ -33,6 +33,8 @@ import { InvoiceManagement } from "../dashboard/pages/InvoiceManagement";
 import { ProjectResources } from "../dashboard/pages/ProjectResources";
 import { ProjectEstimation } from "../dashboard/pages/ProjectEstimation";
 import { PricingConfig } from "../dashboard/pages/PricingConfig";
+import { NotificationCenter } from "../dashboard/notifications/NotificationCenter";
+import { NotificationPreferences } from "../dashboard/notifications/NotificationPreferences";
 
 const REVEAL_EASE: [number, number, number, number] = [0.4, 0, 0.2, 1];
 
@@ -180,6 +182,8 @@ export default function App() {
                 <Route path="resources" element={<ProjectResources />} />
                 <Route path="estimation" element={<ProjectEstimation />} />
                 <Route path="pricing-config" element={<PricingConfig />} />
+                <Route path="notifications" element={<NotificationCenter />} />
+                <Route path="notification-preferences" element={<NotificationPreferences />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
