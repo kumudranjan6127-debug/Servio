@@ -24,11 +24,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "../../app/components/ui/avatar";
 import { Button } from "../../app/components/ui/button";
 import { Separator } from "../../app/components/ui/separator";
+import { NotificationProvider } from "../notifications/NotificationContext";
+import { NotificationBell } from "../notifications/NotificationBell";
 
 const NAV_ITEMS = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Overview", end: true },
   { to: "/dashboard/progress", icon: GitBranch, label: "Progress" },
   { to: "/dashboard/updates", icon: Bell, label: "Updates" },
+  { to: "/dashboard/notifications", icon: Bell, label: "Notifications" },
   { to: "/dashboard/payments", icon: CreditCard, label: "Payments" },
   { to: "/dashboard/invoices", icon: FileText, label: "Invoices" },
   { to: "/dashboard/resources", icon: FolderOpen, label: "Resources" },
@@ -179,6 +182,7 @@ export function DashboardLayout() {
   );
 
   return (
+    <NotificationProvider>
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:block">
@@ -220,21 +224,24 @@ export function DashboardLayout() {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top bar (mobile) */}
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-gray-200 bg-white/80 backdrop-blur-md px-4 dark:border-slate-800 dark:bg-slate-900/80 lg:hidden">
+        {/* Top bar */}
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-gray-200 bg-white/80 backdrop-blur-md px-4 dark:border-slate-800 dark:bg-slate-900/80">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open sidebar"
+              className="lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <span className="text-sm font-semibold bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 bg-clip-text text-transparent">
+            <span className="text-sm font-semibold bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 bg-clip-text text-transparent lg:hidden">
               Servio Dashboard
             </span>
           </div>
+          <div className="flex items-center gap-1">
+          <NotificationBell />
           <Button
             variant="ghost"
             size="icon"
@@ -247,6 +254,7 @@ export function DashboardLayout() {
               <Moon className="h-5 w-5 text-gray-600" />
             )}
           </Button>
+          </div>
         </header>
 
         <main className="p-4 md:p-6 lg:p-8">
@@ -254,5 +262,6 @@ export function DashboardLayout() {
         </main>
       </div>
     </div>
+    </NotificationProvider>
   );
 }
