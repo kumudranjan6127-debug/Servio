@@ -63,10 +63,12 @@ export function Hero() {
               <span className="text-sm text-gray-700 dark:text-gray-200">Available for new projects</span>
             </motion.div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-              Your Business Deserves a Website That{' '}
-              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                <TypingText text="Converts" delay={1200} triggerOnView={false} cursorColor="bg-indigo-600" />
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
+              <span className="hero-shimmer">
+                Your Business Deserves a Website That{' '}
+              </span>
+              <span className="converts-glow bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Converts
               </span>
             </h1>
 
