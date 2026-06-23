@@ -8,6 +8,7 @@ import {
   BUDGET_OPTIONS as budgetOptions,
   WEBSITE_TYPES as websiteTypes,
 } from "../lib/quoteValidation";
+import { submitQuote } from "../lib/submitQuote";
 
 // Persisted submission timestamps for client-side rate limiting. Advisory only
 // (a user can clear storage) — the heavy lifting belongs on a server, but this
@@ -46,10 +47,10 @@ export function QuoteForm() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [_formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   // Bumped on every surfaced form error so the live region re-announces even
   // when the message text is identical to the previous one (e.g. blocked twice).
-  const [_errorNonce, setErrorNonce] = useState(0);
+  const [errorNonce, setErrorNonce] = useState(0);
 
   // Honeypot value lives outside React state (read on submit via ref) so it
   // never round-trips through the controlled inputs a human interacts with.
@@ -99,12 +100,19 @@ export function QuoteForm() {
       return;
     }
 
-    // verdict.status === "ok" — record this submission, then "send".
+    // verdict.status === "ok" — record this submission, then persist + notify.
     writeHistory(verdict.nextHistory);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-    setSubmitted(true);
+    try {
+      await submitQuote(form);
+      setSubmitted(true);
+    } catch {
+      showFormError(
+        "Something went wrong sending your request. Please try again, or email us directly at hello@servio.dev.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputClass = (field: keyof QuoteFormData) =>
@@ -326,6 +334,17 @@ export function QuoteForm() {
                   </p>
                 )}
               </div>
+
+              {formError && (
+                <div
+                  key={errorNonce}
+                  role="alert"
+                  aria-live="assertive"
+                  className="mt-6 rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+                >
+                  {formError}
+                </div>
+              )}
 
               <div className="mt-10">
                 <button
