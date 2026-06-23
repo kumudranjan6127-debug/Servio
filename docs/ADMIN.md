@@ -212,7 +212,36 @@ In the [Firebase console](https://console.firebase.google.com/project/servio-0):
 ### 5.3 Bootstrap the first super admin
 
 The rules only let an existing `super_admin` create admin docs, so seed the
-first one by hand:
+first one with the **CLI bootstrapping script**:
+
+```bash
+# Install the script's peer deps if not present
+npm install --save-dev firebase-admin tsx
+
+# Run the seed script (interactive — prompts for email/password/name)
+npx tsx scripts/seed-admin.ts
+
+# Or provide values via environment variables for CI/automation:
+ADMIN_EMAIL="admin@example.com" \
+ADMIN_PASSWORD="your-secure-password" \
+ADMIN_NAME="Harsh Goswami" \
+npx tsx scripts/seed-admin.ts
+```
+
+The script requires a Firebase service account key. Either:
+- Set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json`, or
+- Place the key at `./serviceAccountKey.json` (git-ignored).
+
+The script will:
+1. Create a Firebase Auth user (or reuse an existing one) with the given email.
+2. Write the `admins/{uid}` Firestore document with `role: "super_admin"`.
+
+Once the first admin is bootstrapped, **all subsequent admin accounts can be
+created from the portal UI** at **Settings → Admin users → Add admin**.
+
+#### Manual alternative (Firebase Console)
+
+If you prefer to seed manually:
 
 1. **Authentication → Users → Add user** — create the admin's email + password
    (or have them sign up). Copy the generated **User UID**.
@@ -226,6 +255,21 @@ first one by hand:
    | `createdAt` | timestamp | now |
 3. Visit `/admin/login`, sign in — you now have full access and can add the rest
    of the team from **Settings → Admin users**.
+
+### 5.3.1 Adding admins from the portal
+
+Once a super admin is bootstrapped, new admin accounts can be created directly
+from the **Settings** page:
+
+1. Navigate to `/admin/settings`.
+2. Click **Add admin**.
+3. Fill in the email, display name, initial password, and role.
+4. The portal creates both the Firebase Auth user and the `admins/{uid}` doc.
+5. Share the initial password securely — the new admin should change it on
+   first login.
+
+Super admins can also **change roles**, **disable/enable**, and **remove**
+admin accounts from the same Settings page.
 
 ### 5.4 Deploy security rules
 
@@ -297,7 +341,8 @@ permissions — each role sees only what it can use.
   Cloud Function.
 - Collection hooks subscribe to whole collections and sort client-side — fine
   for the foundation; add pagination/queries + composite indexes as data grows.
-- Admin creation is manual for the first super admin (by design).
+- First super admin is bootstrapped via the CLI seed script or Firebase Console
+  (by design — see §5.3). After that, admins are created from the portal UI.
 - The last-enabled-super-admin guard is enforced client-side; for true
   guarantees move admin role/disable mutations behind a Cloud Function that
   performs the count-and-block transactionally.

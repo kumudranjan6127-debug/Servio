@@ -29,3 +29,5 @@ Thumbs.db
 
 # Firebase
 .firebase/
+serviceAccountKey.json
+**/serviceAccountKey*.json
