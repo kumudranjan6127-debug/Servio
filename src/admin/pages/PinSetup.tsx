@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { flushSync } from "react-dom";
@@ -91,6 +91,20 @@ export function PinSetup() {
   const { admin, loading } = useAdmin();
   const { completePinSession } = usePinGate();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Resolve destination: use the originally requested route forwarded via
+  // location.state.from, falling back to the dashboard. Sanitise to reject
+  // any path that would loop back through the auth/PIN flow.
+  const rawFrom =
+    (location.state as { from?: { pathname?: string } } | null)?.from
+      ?.pathname ?? "";
+  const destination =
+    rawFrom &&
+    !rawFrom.startsWith("/admin/login") &&
+    !rawFrom.startsWith("/admin/pin")
+      ? rawFrom
+      : "/admin/dashboard";
 
   const [step, setStep] = useState<Step>("new");
   const [pin, setPin] = useState("");
@@ -152,30 +166,29 @@ export function PinSetup() {
     setBusy(true);
 
     try {
-      // 1. Hash the PIN locally (~50 ms at 10k iterations).
+      // 1. Hash the PIN in the Web Worker (non-blocking, runs at 600k iterations).
       const cred = await createPinCredential(pin);
 
-      // 2. Commit session state synchronously so RequirePinSession sees
+      // 2. Persist the credential to Firestore FIRST — the PIN MUST be saved
+      //    before session access is granted. If this fails, the user is shown
+      //    an error and no access is granted.
+      await updateDoc(doc(db, COLLECTIONS.admins, admin.uid), {
+        pinHash: cred.hash,
+        pinSalt: cred.salt,
+        pinIterations: cred.iterations,
+        updatedAt: serverTimestamp(),
+      });
+
+      // 3. Commit session state synchronously so RequirePinSession sees
       //    pinSessionVerified=true before the navigation re-renders the guard.
       flushSync(() => {
         completePinSession();
       });
 
-      // 3. Navigate to the dashboard — PIN is now valid locally.
-      navigate("/admin/dashboard", { replace: true });
+      // 4. Navigate to the originally requested route (or dashboard).
+      navigate(destination, { replace: true });
 
-      // 4. Persist the PIN hash to Firestore in the background.
-      //    This is fire-and-forget so the user isn't waiting on a network call.
-      updateDoc(doc(db, COLLECTIONS.admins, admin.uid), {
-        pinHash: cred.hash,
-        pinSalt: cred.salt,
-        pinIterations: cred.iterations,
-        updatedAt: serverTimestamp(),
-      }).catch(err => {
-        console.error("[PinSetup] background write failed", err);
-      });
-
-      // 5. Audit log is non-critical — fire-and-forget.
+      // 5. Audit log is non-critical — fire-and-forget after navigation.
       void writeAuditLog({
         actorUid: admin.uid,
         actorEmail: admin.email,

@@ -44,11 +44,17 @@ export function AdminLogin() {
     }
 
     // Route through the PIN gate. The PinVerify / PinSetup pages will redirect
-    // to the dashboard once the PIN step is complete.
+    // to protectedFrom once the PIN step is complete.
     if (admin?.pinHash && admin?.pinSalt) {
-      navigate("/admin/pin-verify", { replace: true });
+      navigate("/admin/pin-verify", {
+        replace: true,
+        state: { from: { pathname: protectedFrom } },
+      });
     } else {
-      navigate("/admin/pin-setup", { replace: true });
+      navigate("/admin/pin-setup", {
+        replace: true,
+        state: { from: { pathname: protectedFrom } },
+      });
     }
   }, [loading, firebaseUser, isAdmin, admin, pinSessionVerified, protectedFrom, navigate]);
 

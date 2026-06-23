@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { flushSync } from "react-dom";
@@ -22,8 +22,59 @@ import {
 } from "../lib/pin";
 import { writeAuditLog } from "../lib/audit";
 
-/** Masked PIN dot-slots for the full-page entry form. */
-function PinSlots({ count, invalid }: { count: number; invalid: boolean }) {
+// ── Lockout helpers ──────────────────────────────────────────────────────────
+
+/** Maximum allowed consecutive failed PIN attempts before lockout. */
+const MAX_ATTEMPTS = 3;
+
+/** How long the lockout lasts (stored in localStorage). */
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+/** How long to show the lockout error before auto-signing out (ms). */
+const LOCKOUT_SIGNOUT_DELAY_MS = 4_000;
+
+function lockoutKey(uid: string) {
+  return `pin_lockout_${uid}`;
+}
+
+function getLockoutUntil(uid: string): number | null {
+  try {
+    const val = localStorage.getItem(lockoutKey(uid));
+    if (!val) return null;
+    const until = parseInt(val, 10);
+    return Date.now() < until ? until : null;
+  } catch {
+    return null;
+  }
+}
+
+function setLockout(uid: string): number {
+  const until = Date.now() + LOCKOUT_DURATION_MS;
+  try {
+    localStorage.setItem(lockoutKey(uid), String(until));
+  } catch {
+    /* storage unavailable — lockout still enforced in-memory */
+  }
+  return until;
+}
+
+function clearLockout(uid: string): void {
+  try {
+    localStorage.removeItem(lockoutKey(uid));
+  } catch { /* ignore */ }
+}
+
+// ── Slot renderer ────────────────────────────────────────────────────────────
+
+function PinSlots({
+  count,
+  invalid,
+  locked,
+}: {
+  count: number;
+  invalid: boolean;
+  locked: boolean;
+}) {
   const ctx = useContext(OTPInputContext);
   return (
     <div className="flex items-center justify-center gap-3">
@@ -36,16 +87,16 @@ function PinSlots({ count, invalid }: { count: number; invalid: boolean }) {
             aria-hidden="true"
             className={cn(
               "relative flex h-14 w-12 items-center justify-center rounded-xl border-2 bg-muted/40 text-sm transition-all duration-150",
-              active
+              active && !locked
                 ? "z-10 border-primary ring-4 ring-primary/20 shadow-lg shadow-primary/10"
                 : "border-input",
-              invalid && "border-destructive ring-4 ring-destructive/20",
+              (invalid || locked) && "border-destructive ring-4 ring-destructive/20",
             )}
           >
             {filled && (
               <span className="h-3 w-3 rounded-full bg-foreground shadow-sm" />
             )}
-            {!filled && active && (
+            {!filled && active && !locked && (
               <span className="h-0.5 w-5 animate-pulse rounded-full bg-primary" />
             )}
           </div>
@@ -55,40 +106,83 @@ function PinSlots({ count, invalid }: { count: number; invalid: boolean }) {
   );
 }
 
+// ── Component ────────────────────────────────────────────────────────────────
+
 /**
  * Full-page Security PIN verification screen.
  *
- * Shown after a successful email/password login when the admin already has a
- * PIN configured. Blocks access to the dashboard and all protected routes
- * until the correct PIN is entered. Redirects to /admin/pin-setup if the
- * admin's PIN data is missing or corrupt.
- *
- * Fix notes:
- * - Uses flushSync to commit pinSessionVerified state BEFORE navigate so
+ * Security properties:
+ * - After MAX_ATTEMPTS (3) consecutive failures the account is locked for
+ *   LOCKOUT_DURATION_MS (15 min). The lockout expiry is stored in
+ *   localStorage (keyed by uid) so it survives page refreshes and persists
+ *   across tabs in the same browser.
+ * - After the lock is set the user is automatically signed out after a
+ *   brief delay so the lock screen cannot be bypassed by refreshing.
+ * - PIN upgrade: on a successful verify, if the stored iteration count is
+ *   *less than* the current target (PIN_ITERATIONS), the credential is
+ *   silently re-hashed in the background to bring it up to the current
+ *   strength. Hashes stored at a *higher* count are left untouched.
+ * - Uses flushSync to commit pinSessionVerified before navigate so
  *   RequirePinSession sees the updated value immediately.
- * - Navigates before awaiting any background work (audit log, re-hash).
- * - After a successful verify, re-hashes at the current iteration count in
- *   the background so legacy 150k-iteration PINs are upgraded silently.
+ * - Navigates to the originally requested route (location.state.from)
+ *   rather than always falling back to /admin/dashboard.
  */
 export function PinVerify() {
   const { admin, loading } = useAdmin();
   const { completePinSession } = usePinGate();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Resolve destination: use the originally requested route forwarded via
+  // location.state.from, falling back to the dashboard. Sanitise to reject
+  // any path that would loop back through the auth/PIN flow.
+  const rawFrom =
+    (location.state as { from?: { pathname?: string } } | null)?.from
+      ?.pathname ?? "";
+  const destination =
+    rawFrom &&
+    !rawFrom.startsWith("/admin/login") &&
+    !rawFrom.startsWith("/admin/pin")
+      ? rawFrom
+      : "/admin/dashboard";
 
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [attempts, setAttempts] = useState(0);
 
-  // Redirect to setup if no PIN is configured
+  // locked=true disables all interaction and triggers auto sign-out.
+  const [locked, setLocked] = useState(false);
+
+  // Restore lockout from localStorage on mount (persists across page refreshes).
+  useEffect(() => {
+    if (!admin?.uid) return;
+    const until = getLockoutUntil(admin.uid);
+    if (until !== null) {
+      setLocked(true);
+      setError(
+        `Too many failed attempts. Account locked until ${new Date(until).toLocaleTimeString()}. Signing out…`,
+      );
+      setTimeout(() => void doSignOut(), LOCKOUT_SIGNOUT_DELAY_MS);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [admin?.uid]);
+
+  // Redirect to setup if no PIN is configured.
   useEffect(() => {
     if (!loading && admin && !admin.pinHash) {
       navigate("/admin/pin-setup", { replace: true });
     }
   }, [loading, admin, navigate]);
 
+  const doSignOut = async () => {
+    if (admin?.uid) clearLockout(admin.uid); // don't persist across devices
+    await signOut(auth);
+    navigate("/admin/login", { replace: true });
+  };
+
   const handleSubmit = async (candidate: string) => {
-    if (busy || !candidate) return;
+    if (busy || locked || !candidate) return;
     if (!admin) {
       setError("No admin account is loaded. Please sign in again.");
       return;
@@ -106,6 +200,7 @@ export function PinVerify() {
     setBusy(true);
 
     try {
+      // Hashing runs in the Web Worker — main thread stays responsive.
       const ok = await verifyPin(candidate, {
         hash: admin.pinHash,
         salt: admin.pinSalt,
@@ -113,20 +208,20 @@ export function PinVerify() {
       });
 
       if (ok) {
-        // ── CRITICAL: flushSync commits the state update synchronously so
-        // RequirePinSession reads pinSessionVerified=true before navigate
-        // renders the dashboard route. Without this, the state batch hasn't
-        // committed yet and RequirePinSession bounces the user back.
+        // Commit session state synchronously so RequirePinSession sees
+        // pinSessionVerified=true before navigate re-renders the guard.
         flushSync(() => {
           completePinSession();
         });
-        navigate("/admin/dashboard", { replace: true });
+        navigate(destination, { replace: true });
 
-        // Background work after navigation — don't block the redirect.
-        // 1. Silently re-hash at current iteration count if PIN was stored at
-        //    a higher count (e.g. legacy 150k), so next verify is fast.
+        // ── Background work after navigation ──────────────────────────────
+
+        // 1. Upgrade credential if stored iteration count is WEAKER than the
+        //    current target. Use `<` — not `!==` — to preserve any hashes that
+        //    were already stored at a stronger (higher) count.
         const storedIterations = admin.pinIterations ?? PIN_ITERATIONS;
-        if (storedIterations !== PIN_ITERATIONS) {
+        if (storedIterations < PIN_ITERATIONS) {
           createPinCredential(candidate)
             .then((cred) =>
               updateDoc(doc(db, COLLECTIONS.admins, admin.uid), {
@@ -140,6 +235,7 @@ export function PinVerify() {
               console.warn("[PinVerify] background re-hash failed", err),
             );
         }
+
         // 2. Audit log.
         void writeAuditLog({
           actorUid: admin.uid,
@@ -149,12 +245,27 @@ export function PinVerify() {
       } else {
         const next = attempts + 1;
         setAttempts(next);
-        setError(
-          next >= 3
-            ? `Incorrect PIN (${next} failed attempts). Please try again carefully.`
-            : "Incorrect PIN. Please try again.",
-        );
         setPin("");
+
+        if (next >= MAX_ATTEMPTS) {
+          // ── Real lockout enforcement ──────────────────────────────────────
+          // Store expiry in localStorage so it survives page refreshes and is
+          // visible across all tabs in the same browser origin.
+          const until = setLockout(admin.uid);
+          setLocked(true);
+          setError(
+            `Too many failed attempts. Account locked until ${new Date(until).toLocaleTimeString()}. Signing out…`,
+          );
+          // Auto sign-out after a brief delay so the user sees the message.
+          setTimeout(() => void doSignOut(), LOCKOUT_SIGNOUT_DELAY_MS);
+        } else {
+          setError(
+            next === MAX_ATTEMPTS - 1
+              ? `Incorrect PIN. 1 attempt remaining before lockout.`
+              : "Incorrect PIN. Please try again.",
+          );
+        }
+
         setBusy(false);
       }
     } catch (err) {
@@ -165,11 +276,6 @@ export function PinVerify() {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut(auth);
-    navigate("/admin/login", { replace: true });
-  };
-
   if (loading) {
     return <AdminLoading label="Loading account…" />;
   }
@@ -177,6 +283,8 @@ export function PinVerify() {
   if (!admin) {
     return null; // ProtectedAdminRoute will redirect to login
   }
+
+  const inputDisabled = busy || locked;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-white via-indigo-50/40 to-white px-4 dark:from-slate-950 dark:via-indigo-950/20 dark:to-slate-950">
@@ -195,20 +303,33 @@ export function PinVerify() {
         <div className="rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-xl">
           {/* Header */}
           <div className="mb-8 flex flex-col items-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30">
+            <div
+              className={cn(
+                "mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-lg",
+                locked
+                  ? "bg-destructive shadow-destructive/30"
+                  : "bg-gradient-to-br from-indigo-600 to-purple-600 shadow-indigo-500/30",
+              )}
+            >
               <ShieldCheck className="h-8 w-8" aria-hidden="true" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Security verification
+              {locked ? "Account locked" : "Security verification"}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Enter your{" "}
-              <span className="font-medium text-foreground">
-                {PIN_LENGTH}-digit PIN
-              </span>{" "}
-              to access the admin panel.
+              {locked ? (
+                "Too many incorrect PIN attempts."
+              ) : (
+                <>
+                  Enter your{" "}
+                  <span className="font-medium text-foreground">
+                    {PIN_LENGTH}-digit PIN
+                  </span>{" "}
+                  to access the admin panel.
+                </>
+              )}
             </p>
-            {admin.displayName && (
+            {admin.displayName && !locked && (
               <p className="mt-1 text-xs text-muted-foreground">
                 Signed in as{" "}
                 <span className="font-medium">{admin.email}</span>
@@ -230,8 +351,9 @@ export function PinVerify() {
                 maxLength={PIN_LENGTH}
                 value={pin}
                 onChange={(val) => {
+                  if (locked) return;
                   setPin(val);
-                  if (error) setError(null);
+                  if (error && !locked) setError(null);
                   // Auto-submit the moment the last digit is entered.
                   if (val.length === PIN_LENGTH) {
                     void handleSubmit(val);
@@ -240,11 +362,15 @@ export function PinVerify() {
                 pattern={REGEXP_ONLY_DIGITS}
                 inputMode="numeric"
                 autoFocus
-                disabled={busy}
+                disabled={inputDisabled}
                 containerClassName="flex items-center justify-center"
                 aria-label="Security PIN"
               >
-                <PinSlots count={pin.length} invalid={!!error} />
+                <PinSlots
+                  count={pin.length}
+                  invalid={!!error && !locked}
+                  locked={locked}
+                />
               </OTPInput>
 
               {error && (
@@ -261,18 +387,20 @@ export function PinVerify() {
               )}
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={busy || pin.length < PIN_LENGTH}
-            >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-              )}
-              {busy ? "Verifying…" : "Verify PIN"}
-            </Button>
+            {!locked && (
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={inputDisabled || pin.length < PIN_LENGTH}
+              >
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                )}
+                {busy ? "Verifying…" : "Verify PIN"}
+              </Button>
+            )}
           </form>
 
           {/* Divider */}
@@ -288,20 +416,13 @@ export function PinVerify() {
             variant="ghost"
             size="sm"
             className="w-full text-muted-foreground"
-            onClick={() => void handleSignOut()}
+            disabled={busy}
+            onClick={() => void doSignOut()}
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Sign out and use a different account
           </Button>
         </div>
-
-        {/* Attempts warning */}
-        {attempts >= 3 && (
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Too many failed attempts? Sign out and contact your system
-            administrator if you&apos;re locked out.
-          </p>
-        )}
       </div>
     </div>
   );
