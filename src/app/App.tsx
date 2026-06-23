@@ -16,6 +16,9 @@ import { FinalCTA } from "./components/FinalCTA";
 import { Footer } from "./components/Footer";
 import NotFound from "./components/NotFound";
 import { ServiceDetailPage } from "./components/ServiceDetailPage";
+import { PrivacyPolicy } from "./components/PrivacyPolicy";
+import { TermsOfService } from "./components/TermsOfService";
+import { CookiePolicy } from "./components/CookiePolicy";
 import { ThemeProvider } from "./hooks/useTheme";
 import { SplashScreen } from "./components/SplashScreen";
 import { AuthProvider } from "../Firebase/AuthContext";
@@ -166,6 +169,9 @@ export default function App() {
               <Route path="/signup" element={<SignUp />} />
               <Route path="/admin/*" element={<AdminApp />} />
               <Route path="/services/:slug" element={<ServiceDetailPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
               <Route
                 path="/dashboard"
                 element={

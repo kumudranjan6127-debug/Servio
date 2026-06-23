@@ -346,7 +346,18 @@ export function QuoteForm() {
                 </div>
               )}
 
-              <div className="mt-10">
+              <div className="mt-8 text-sm text-gray-400 text-center">
+                By submitting this request, you agree to our{" "}
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
+                  Privacy Policy
+                </a>{" "}
+                and{" "}
+                <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
+                  Terms of Service
+                </a>.
+              </div>
+
+              <div className="mt-6">
                 <button
                   type="submit"
                   disabled={loading}
