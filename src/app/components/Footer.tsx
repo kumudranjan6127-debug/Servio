@@ -1,4 +1,5 @@
 import { Zap, Twitter, Github, Linkedin, Instagram, Mail, Phone, MapPin } from "lucide-react";
+import { SmoothLink } from "./SmoothLink";
 
 const services = [
   "Landing Pages",
@@ -10,11 +11,11 @@ const services = [
 ];
 
 const company = [
-  { label: "About", href: "#" },
-  { label: "Portfolio", href: "#portfolio" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Blog", href: "#" },
-  { label: "Careers", href: "#" },
+  { label: "About", href: null, section: null },
+  { label: "Portfolio", href: null, section: "portfolio" },
+  { label: "Pricing", href: null, section: "pricing" },
+  { label: "Blog", href: null, section: null },
+  { label: "Careers", href: null, section: null },
 ];
 
 const socials = [
@@ -65,9 +66,9 @@ export function Footer() {
             <ul className="space-y-3">
               {services.map((s) => (
                 <li key={s}>
-                  <a href="#services" className="text-sm hover:text-indigo-400 transition-colors">
+                  <SmoothLink to="services" className="text-sm hover:text-indigo-400 transition-colors">
                     {s}
-                  </a>
+                  </SmoothLink>
                 </li>
               ))}
             </ul>
@@ -77,11 +78,19 @@ export function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-5">Company</h4>
             <ul className="space-y-3">
-              {company.map(({ label, href }) => (
+              {company.map(({ label, href, section }) => (
                 <li key={label}>
-                  <a href={href} className="text-sm hover:text-indigo-400 transition-colors">
-                    {label}
-                  </a>
+                  {section ? (
+                    <SmoothLink to={section} className="text-sm hover:text-indigo-400 transition-colors">
+                      {label}
+                    </SmoothLink>
+                  ) : href ? (
+                    <a href={href} className="text-sm hover:text-indigo-400 transition-colors">
+                      {label}
+                    </a>
+                  ) : (
+                    <span className="text-sm cursor-default">{label}</span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -105,12 +114,12 @@ export function Footer() {
               </li>
             </ul>
             <div className="mt-6">
-              <a
-                href="#contact"
+              <SmoothLink
+                to="contact"
                 className="inline-flex px-5 py-2.5 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all duration-200"
               >
                 Get Free Quote
-              </a>
+              </SmoothLink>
             </div>
           </div>
         </div>

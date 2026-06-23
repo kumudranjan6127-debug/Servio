@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { TypingText } from "./TypingText";
 import { ChevronDown } from "lucide-react";
+import { SmoothLink } from "./SmoothLink";
 
 const faqs = [
   {
@@ -113,9 +114,12 @@ export function FAQ() {
         >
           <p className="text-gray-600 dark:text-gray-300">
             Still have questions?{" "}
-            <a href="#contact" className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
+            <SmoothLink
+              to="contact"
+              className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline"
+            >
               Get in touch with us
-            </a>
+            </SmoothLink>
           </p>
         </motion.div>
       </div>
