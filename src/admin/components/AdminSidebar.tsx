@@ -5,6 +5,7 @@ import { auth } from "@/Firebase/firebase";
 import { cn } from "@/app/components/ui/utils";
 import { ADMIN_NAV } from "../rbac/navigation";
 import { useAdmin } from "../context/useAdmin";
+import { usePinGate } from "../context/usePinGate";
 import { RoleBadge } from "./RoleBadge";
 import { initials } from "../lib/format";
 
@@ -16,10 +17,14 @@ export function AdminSidebar({
   onNavigate?: () => void;
 }) {
   const { admin, can } = useAdmin();
+  const { clearPinSession } = usePinGate();
   const navigate = useNavigate();
   const items = ADMIN_NAV.filter((item) => can(item.permission));
 
   const handleSignOut = async () => {
+    // Clear the session-level PIN flag before signing out so the next login
+    // always requires a fresh PIN verification.
+    clearPinSession();
     await signOut(auth);
     onNavigate?.();
     navigate("/admin/login", { replace: true });

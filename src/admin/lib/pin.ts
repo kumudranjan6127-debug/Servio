@@ -10,9 +10,14 @@
  * gate sensitive writes on a short-lived verification claim. This module is
  * intentionally written so that swapping the backend only touches these
  * functions. See docs/ADMIN.md → "Security PIN".
+ *
+ * Iteration count: 600 000 meets the OWASP 2023 recommendation for
+ * PBKDF2-HMAC-SHA256. The count is stored per-credential so existing PINs
+ * hashed at a different count still verify correctly. Hashing runs in a
+ * dedicated Web Worker (pin.worker.ts) so the main thread is never blocked.
  */
 
-const PIN_ITERATIONS = 150_000;
+export const PIN_ITERATIONS = 600_000;
 const DERIVED_BITS = 256;
 const encoder = new TextEncoder();
 
@@ -38,10 +43,66 @@ export function generateSalt(byteLength = 16): string {
   return bytesToHex(bytes);
 }
 
+// ── Web Worker singleton ────────────────────────────────────────────────────
+// One worker is shared across all hash calls; requests are correlated by id.
+
+let _worker: Worker | null = null;
+let _requestId = 0;
+const _pending = new Map<
+  number,
+  { resolve: (h: string) => void; reject: (e: Error) => void }
+>();
+
+function getHashWorker(): Worker {
+  if (!_worker) {
+    _worker = new Worker(new URL("./pin.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    _worker.onmessage = (
+      e: MessageEvent<{ id: number; hash?: string; error?: string }>,
+    ) => {
+      const { id, hash, error } = e.data;
+      const pending = _pending.get(id);
+      if (!pending) return;
+      _pending.delete(id);
+      if (error) pending.reject(new Error(error));
+      else if (hash !== undefined) pending.resolve(hash);
+      else pending.reject(new Error("Worker returned no hash"));
+    };
+    _worker.onerror = (e) => {
+      // Reject all in-flight requests and reset so the next call spawns fresh.
+      for (const [, { reject }] of _pending) {
+        reject(new Error(e.message ?? "Worker error"));
+      }
+      _pending.clear();
+      _worker = null;
+    };
+  }
+  return _worker;
+}
+
+/** Hash `pin` via the Web Worker (off main thread). Falls back to main thread
+ *  if the Worker API is unavailable (e.g. old browsers / SSR). */
 export async function hashPin(
   pin: string,
   salt: string,
   iterations: number = PIN_ITERATIONS,
+): Promise<string> {
+  if (typeof Worker === "undefined") {
+    // Fallback: run on main thread (will block UI at high iteration counts).
+    return hashPinMainThread(pin, salt, iterations);
+  }
+  const id = ++_requestId;
+  return new Promise<string>((resolve, reject) => {
+    _pending.set(id, { resolve, reject });
+    getHashWorker().postMessage({ id, pin, salt, iterations });
+  });
+}
+
+async function hashPinMainThread(
+  pin: string,
+  salt: string,
+  iterations: number,
 ): Promise<string> {
   const keyMaterial = await crypto.subtle.importKey(
     "raw",

@@ -5,6 +5,7 @@ import { Home, Loader2, ShieldCheck } from "lucide-react";
 import { auth } from "@/Firebase/firebase";
 import { Button } from "@/app/components/ui/button";
 import { useAdmin } from "../context/useAdmin";
+import { usePinGate } from "../context/usePinGate";
 import { AdminLoading } from "../components/AdminLoading";
 import { authErrorMessage } from "../lib/authError";
 
@@ -13,12 +14,19 @@ interface LocationState {
 }
 
 export function AdminLogin() {
-  const { firebaseUser, isAdmin, loading, error: adminError, _debug } = useAdmin();
+  const { firebaseUser, isAdmin, loading, admin, error: adminError, _debug } = useAdmin();
+  const { pinSessionVerified } = usePinGate();
   const navigate = useNavigate();
   const location = useLocation();
-  const from =
-    (location.state as LocationState | null)?.from?.pathname ??
-    "/admin/dashboard";
+  // Only use `from` if it's a proper dashboard/protected route, not a PIN page.
+  const rawFrom =
+    (location.state as LocationState | null)?.from?.pathname ?? "";
+  const protectedFrom =
+    rawFrom &&
+    !rawFrom.startsWith("/admin/login") &&
+    !rawFrom.startsWith("/admin/pin")
+      ? rawFrom
+      : "/admin/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,10 +34,29 @@ export function AdminLogin() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && firebaseUser && isAdmin) {
-      navigate(from, { replace: true });
+    if (loading || !firebaseUser || !isAdmin) return;
+
+    // If the PIN session is already verified (e.g. the user refreshed the login
+    // page while still logged in), go straight to the destination.
+    if (pinSessionVerified) {
+      navigate(protectedFrom, { replace: true });
+      return;
     }
-  }, [loading, firebaseUser, isAdmin, from, navigate]);
+
+    // Route through the PIN gate. The PinVerify / PinSetup pages will redirect
+    // to protectedFrom once the PIN step is complete.
+    if (admin?.pinHash && admin?.pinSalt) {
+      navigate("/admin/pin-verify", {
+        replace: true,
+        state: { from: { pathname: protectedFrom } },
+      });
+    } else {
+      navigate("/admin/pin-setup", {
+        replace: true,
+        state: { from: { pathname: protectedFrom } },
+      });
+    }
+  }, [loading, firebaseUser, isAdmin, admin, pinSessionVerified, protectedFrom, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
