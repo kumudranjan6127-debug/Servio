@@ -13,7 +13,7 @@ interface LocationState {
 }
 
 export function AdminLogin() {
-  const { firebaseUser, isAdmin, loading, error: adminError } = useAdmin();
+  const { firebaseUser, isAdmin, loading, error: adminError, _debug } = useAdmin();
   const navigate = useNavigate();
   const location = useLocation();
   const from =
@@ -91,6 +91,16 @@ export function AdminLogin() {
               <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 Error: {adminError}
               </p>
+            )}
+            {_debug && (
+              <details className="rounded-lg bg-muted px-3 py-2 text-left text-xs text-muted-foreground">
+                <summary className="cursor-pointer font-medium">
+                  Diagnostic info
+                </summary>
+                <pre className="mt-1 whitespace-pre-wrap break-all">
+                  {_debug}
+                </pre>
+              </details>
             )}
             <Button
               type="button"

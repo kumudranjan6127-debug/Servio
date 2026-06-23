@@ -20,6 +20,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
   const [docLoading, setDocLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [_debug, setDebug] = useState<string | null>(null);
   const lastLoginRecorded = useRef<string | null>(null);
 
   useEffect(() => {
@@ -46,11 +47,20 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onSnapshot(
       ref,
       (snapshot) => {
-        setAdmin(
-          snapshot.exists()
-            ? parseAdminProfile(currentUser.uid, snapshot.data())
-            : null,
+        const exists = snapshot.exists();
+        const data = exists ? snapshot.data() : null;
+        const parsed = exists
+          ? parseAdminProfile(currentUser.uid, data!)
+          : null;
+        setDebug(
+          JSON.stringify({
+            uid: currentUser.uid,
+            docExists: exists,
+            rawData: data,
+            parsed: parsed ? "valid" : "null",
+          }),
         );
+        setAdmin(parsed);
         setDocLoading(false);
       },
       (err) => {
@@ -94,6 +104,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       error,
       isAdmin,
       can,
+      _debug,
     }),
     [
       currentUser,
@@ -104,6 +115,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       error,
       isAdmin,
       can,
+      _debug,
     ],
   );
 
