@@ -21,48 +21,18 @@ import {
   verifyPin,
 } from "../lib/pin";
 import { writeAuditLog } from "../lib/audit";
+import {
+  clearLockout,
+  MAX_ATTEMPTS,
+  readLockout,
+  recordFailure,
+} from "../lib/pinLockout";
 
 // ── Lockout helpers ──────────────────────────────────────────────────────────
-
-/** Maximum allowed consecutive failed PIN attempts before lockout. */
-const MAX_ATTEMPTS = 3;
-
-/** How long the lockout lasts (stored in localStorage). */
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+// Persistent attempt/lockout state lives in ../lib/pinLockout (unit-tested).
 
 /** How long to show the lockout error before auto-signing out (ms). */
 const LOCKOUT_SIGNOUT_DELAY_MS = 4_000;
-
-function lockoutKey(uid: string) {
-  return `pin_lockout_${uid}`;
-}
-
-function getLockoutUntil(uid: string): number | null {
-  try {
-    const val = localStorage.getItem(lockoutKey(uid));
-    if (!val) return null;
-    const until = parseInt(val, 10);
-    return Date.now() < until ? until : null;
-  } catch {
-    return null;
-  }
-}
-
-function setLockout(uid: string): number {
-  const until = Date.now() + LOCKOUT_DURATION_MS;
-  try {
-    localStorage.setItem(lockoutKey(uid), String(until));
-  } catch {
-    /* storage unavailable — lockout still enforced in-memory */
-  }
-  return until;
-}
-
-function clearLockout(uid: string): void {
-  try {
-    localStorage.removeItem(lockoutKey(uid));
-  } catch { /* ignore */ }
-}
 
 // ── Slot renderer ────────────────────────────────────────────────────────────
 
@@ -112,12 +82,15 @@ function PinSlots({
  * Full-page Security PIN verification screen.
  *
  * Security properties:
- * - After MAX_ATTEMPTS (3) consecutive failures the account is locked for
- *   LOCKOUT_DURATION_MS (15 min). The lockout expiry is stored in
- *   localStorage (keyed by uid) so it survives page refreshes and persists
- *   across tabs in the same browser.
- * - After the lock is set the user is automatically signed out after a
- *   brief delay so the lock screen cannot be bypassed by refreshing.
+ * - The failed-attempt count is persisted (localStorage, keyed by uid), so it
+ *   cannot be reset by refreshing the page between guesses. After MAX_ATTEMPTS
+ *   (3) consecutive failures the account is locked for LOCKOUT_DURATION_MS
+ *   (15 min); the expiry is persisted too and survives refreshes and tabs.
+ * - After the lock is set the user is automatically signed out after a brief
+ *   delay. The lockout is deliberately NOT cleared on sign-out, so signing back
+ *   in re-locks until the window expires — the forced sign-out cannot be used
+ *   to bypass the lock. State is cleared only on a successful verification.
+ *   (See ../lib/pinLockout for the persisted state machine and its tests.)
  * - PIN upgrade: on a successful verify, if the stored iteration count is
  *   *less than* the current target (PIN_ITERATIONS), the credential is
  *   silently re-hashed in the background to bring it up to the current
@@ -149,21 +122,26 @@ export function PinVerify() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [attempts, setAttempts] = useState(0);
 
   // locked=true disables all interaction and triggers auto sign-out.
   const [locked, setLocked] = useState(false);
 
-  // Restore lockout from localStorage on mount (persists across page refreshes).
+  // The failed-attempt count is the persisted store's responsibility (see
+  // ../lib/pinLockout) — it's the single source of truth and survives refreshes.
+  // React state below only tracks UI concerns (pin/error/busy/locked).
+
+  // If a lockout is still active on mount, surface it and force sign-out. This
+  // is what re-locks an admin who signs back in during the window.
   useEffect(() => {
     if (!admin?.uid) return;
-    const until = getLockoutUntil(admin.uid);
-    if (until !== null) {
+    const { lockedUntil } = readLockout(admin.uid);
+    if (lockedUntil !== null) {
       setLocked(true);
       setError(
-        `Too many failed attempts. Account locked until ${new Date(until).toLocaleTimeString()}. Signing out…`,
+        `Too many failed attempts. Account locked until ${new Date(lockedUntil).toLocaleTimeString()}. Signing out…`,
       );
-      setTimeout(() => void doSignOut(), LOCKOUT_SIGNOUT_DELAY_MS);
+      const t = setTimeout(() => void doSignOut(), LOCKOUT_SIGNOUT_DELAY_MS);
+      return () => clearTimeout(t);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [admin?.uid]);
@@ -176,7 +154,10 @@ export function PinVerify() {
   }, [loading, admin, navigate]);
 
   const doSignOut = async () => {
-    if (admin?.uid) clearLockout(admin.uid); // don't persist across devices
+    // Intentionally does NOT clear the lockout. The forced sign-out exists to
+    // *enforce* the lockout window; clearing it here would let the admin sign
+    // straight back in with a clean slate (the original bug). State is
+    // per-browser localStorage, so there is nothing to leak across devices.
     await signOut(auth);
     navigate("/admin/login", { replace: true });
   };
@@ -208,6 +189,10 @@ export function PinVerify() {
       });
 
       if (ok) {
+        // Correct PIN — wipe any persisted failed-attempt / lockout state so a
+        // legitimate admin who fumbled a digit doesn't carry a stale counter.
+        clearLockout(admin.uid);
+
         // Commit session state synchronously so RequirePinSession sees
         // pinSessionVerified=true before navigate re-renders the guard.
         flushSync(() => {
@@ -243,18 +228,16 @@ export function PinVerify() {
           action: "admin.pin_verified",
         });
       } else {
-        const next = attempts + 1;
-        setAttempts(next);
         setPin("");
 
-        if (next >= MAX_ATTEMPTS) {
-          // ── Real lockout enforcement ──────────────────────────────────────
-          // Store expiry in localStorage so it survives page refreshes and is
-          // visible across all tabs in the same browser origin.
-          const until = setLockout(admin.uid);
+        // Persist the failure (survives refreshes) and find out whether this
+        // one tripped the lockout. recordFailure handles the threshold + expiry.
+        const { attempts: next, lockedUntil } = recordFailure(admin.uid);
+
+        if (lockedUntil !== null) {
           setLocked(true);
           setError(
-            `Too many failed attempts. Account locked until ${new Date(until).toLocaleTimeString()}. Signing out…`,
+            `Too many failed attempts. Account locked until ${new Date(lockedUntil).toLocaleTimeString()}. Signing out…`,
           );
           // Auto sign-out after a brief delay so the user sees the message.
           setTimeout(() => void doSignOut(), LOCKOUT_SIGNOUT_DELAY_MS);
