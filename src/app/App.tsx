@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { Routes, Route, useLocation, BrowserRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import { SEO, SITE_URL } from "./components/SEO";
+import { SEO } from "./components/SEO";
+import { SITE_URL } from "./lib/siteConfig";
 import { AnimatePresence, motion } from "motion/react";
 import { Navbar } from "./components/Navbar";
 import { Hero } from "./components/Hero";

@@ -5,7 +5,8 @@ import { ArrowLeft, Check, ChevronDown, ArrowRight } from 'lucide-react';
 import { services } from '../data/servicesData';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
-import { SEO, SITE_URL } from './SEO';
+import { SEO } from './SEO';
+import { SITE_URL } from '../lib/siteConfig';
 
 function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
   const [open, setOpen] = useState(false);

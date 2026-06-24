@@ -35,6 +35,8 @@ export function TypingText({
   const reduce = useReducedMotion();
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-5% 0px' });
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   const [displayed, setDisplayed] = useState(reduce ? text : '');
   const [done, setDone] = useState(!!reduce);
@@ -62,7 +64,7 @@ export function TypingText({
           clearInterval(intervalId);
           if (!cancelled) {
             setDone(true);
-            onDone?.();
+            onDoneRef.current?.();
           }
         }
       }, speed);

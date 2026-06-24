@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
+import { SITE_URL } from '../lib/siteConfig';
 
-export const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined) ?? 'https://servio.dev';
 const SITE_NAME = 'Servio';
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
