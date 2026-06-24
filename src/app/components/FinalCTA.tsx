@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { SmoothLink } from "./SmoothLink";
 
 export function FinalCTA() {
   const reduce = useReducedMotion();
@@ -51,19 +52,19 @@ export function FinalCTA() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="#contact"
+              <SmoothLink
+                to="contact"
                 className="group inline-flex items-center gap-3 px-8 py-4 bg-white text-indigo-600 font-bold rounded-2xl hover:shadow-2xl hover:shadow-black/30 hover:-translate-y-1 active:translate-y-0 transition-all duration-200"
               >
                 Start Your Project
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </a>
-              <a
-                href="#portfolio"
+              </SmoothLink>
+              <SmoothLink
+                to="portfolio"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-2xl border border-white/20 hover:bg-white/20 transition-all duration-200"
               >
                 View Our Work
-              </a>
+              </SmoothLink>
             </div>
 
             {/* Trust indicators */}

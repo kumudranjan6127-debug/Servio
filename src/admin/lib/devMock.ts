@@ -20,9 +20,22 @@ import {
  * When enabled: AdminContext provides a fake super_admin and the data hooks
  * return the demo data below. Real Firestore writes (create/delete/role change)
  * will still fail without a backend — this mode is for *viewing* the UI.
+ *
+ * IMPORTANT: This flag is explicitly compile-time dead-code-eliminated in
+ * production builds. The `import.meta.env.DEV` check is replaced with `false`
+ * by Vite/esbuild, making the entire mock path unreachable and tree-shaken.
  */
-export const DEV_MOCK_ENABLED =
-  import.meta.env.DEV && import.meta.env.VITE_ADMIN_DEV_MOCK === "true";
+export const DEV_MOCK_ENABLED: boolean =
+  import.meta.env.DEV === true &&
+  import.meta.env.VITE_ADMIN_DEV_MOCK === "true";
+
+if (DEV_MOCK_ENABLED) {
+  console.warn(
+    "[Servio] Admin dev-mock mode is ACTIVE. " +
+      "Auth is bypassed — do NOT use this in production. " +
+      "Remove VITE_ADMIN_DEV_MOCK from .env.local to disable.",
+  );
+}
 
 function ts(iso: string): Timestamp {
   return Timestamp.fromDate(new Date(iso));

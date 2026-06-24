@@ -17,6 +17,23 @@ export interface PinGateValue {
   isVerified: boolean;
   /** Clear the current verification (e.g. on sign-out). */
   reset: () => void;
+
+  // ── Login-session PIN gate ──────────────────────────────────────────────
+  /**
+   * True once the admin has passed the full-page PIN check for the current
+   * login session. Required before any protected admin route is accessible.
+   * Cleared on sign-out or whenever the admin identity changes.
+   */
+  pinSessionVerified: boolean;
+  /**
+   * Mark the current login session as PIN-verified. Call this from the
+   * PinVerifyPage / PinSetupPage after a successful PIN check or setup.
+   */
+  completePinSession: () => void;
+  /**
+   * Explicitly clear the session-level PIN flag (called on sign-out).
+   */
+  clearPinSession: () => void;
 }
 
 export const PinGateContext = createContext<PinGateValue | null>(null);

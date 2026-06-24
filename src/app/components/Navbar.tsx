@@ -6,6 +6,7 @@ import { useThrottledScroll } from '../hooks/useThrottledScroll';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../../Firebase/useAuth';
 import { auth } from '../../Firebase/firebase';
+import { scrollToSectionFromAnyRoute } from '../lib/scrollToSection';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -32,17 +33,7 @@ export function Navbar() {
 
   const scrollToSection = (id: string) => {
     setIsMobileMenuOpen(false);
-    // If we are not on the landing page, navigate there first.
-    if (location.pathname !== '/') {
-      navigate('/');
-      // Use a timeout to allow the landing page to render before scrolling.
-      setTimeout(() => {
-        document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
-      }, 100);
-    } else {
-      // If we are already on the landing page, scroll immediately.
-      document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
-    }
+    scrollToSectionFromAnyRoute(id, navigate, location.pathname);
   };
 
   return (

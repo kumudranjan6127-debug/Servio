@@ -15,19 +15,35 @@ import { useAdmin } from "./useAdmin";
 import { PinDialog } from "../components/PinDialog";
 
 /**
- * Provides session-based security-PIN verification. Wrap the authenticated
- * admin area with this provider, then call `usePinGate().ensureVerified()`
- * before a sensitive action:
+ * Provides two layers of security-PIN state:
  *
- *   const { ensureVerified } = usePinGate();
- *   if (!(await ensureVerified())) return; // user cancelled
- *   await deleteProject(id);
+ * 1. **Session gate** (`pinSessionVerified`): a boolean that must be `true`
+ *    before any protected admin route is rendered. It is set by the dedicated
+ *    PinVerifyPage / PinSetupPage on first login and cleared on sign-out.
+ *
+ * 2. **Action gate** (`ensureVerified` / `reverify`): the existing per-action
+ *    TTL window used to guard sensitive mutations (delete, role change, etc.).
+ *    Opening the action dialog calls `settle(true)` which also keeps the
+ *    per-action TTL fresh.
  */
 export function PinGateProvider({ children }: { children: ReactNode }) {
   const { admin } = useAdmin();
+
+  // ── Per-action PIN dialog state ─────────────────────────────────────────
   const [open, setOpen] = useState(false);
   const [verifiedUntil, setVerifiedUntil] = useState<number | null>(null);
   const resolverRef = useRef<((ok: boolean) => void) | null>(null);
+
+  // ── Login-session PIN gate ──────────────────────────────────────────────
+  const [pinSessionVerified, setPinSessionVerified] = useState(false);
+
+  const completePinSession = useCallback(() => {
+    setPinSessionVerified(true);
+  }, []);
+
+  const clearPinSession = useCallback(() => {
+    setPinSessionVerified(false);
+  }, []);
 
   const settle = useCallback((ok: boolean) => {
     const resolve = resolverRef.current;
@@ -37,10 +53,19 @@ export function PinGateProvider({ children }: { children: ReactNode }) {
     resolve?.(ok);
   }, []);
 
-  // When the signed-in admin changes (incl. sign-out), drop any verification
-  // and abandon an in-flight challenge so a stale dialog/promise never lingers.
+  // Track the previous UID so we only reset state when the signed-in user
+  // actually changes (sign-out or account switch). A plain `admin?.uid`
+  // dependency would also fire whenever the admin document is updated in
+  // Firestore (e.g. when the background PIN write lands and onSnapshot fires),
+  // which would incorrectly wipe pinSessionVerified.
+  const prevUidRef = useRef<string | undefined>(undefined);
   useEffect(() => {
+    const uid = admin?.uid;
+    if (uid === prevUidRef.current) return; // same user — do nothing
+    prevUidRef.current = uid;
+    // The admin identity changed (sign-in/sign-out) — drop all state.
     setVerifiedUntil(null);
+    setPinSessionVerified(false);
     if (resolverRef.current) {
       resolverRef.current(false);
       resolverRef.current = null;
@@ -70,8 +95,24 @@ export function PinGateProvider({ children }: { children: ReactNode }) {
   const isVerified = verifiedUntil !== null && Date.now() < verifiedUntil;
 
   const value = useMemo<PinGateValue>(
-    () => ({ ensureVerified, reverify: challenge, isVerified, reset }),
-    [ensureVerified, challenge, isVerified, reset],
+    () => ({
+      ensureVerified,
+      reverify: challenge,
+      isVerified,
+      reset,
+      pinSessionVerified,
+      completePinSession,
+      clearPinSession,
+    }),
+    [
+      ensureVerified,
+      challenge,
+      isVerified,
+      reset,
+      pinSessionVerified,
+      completePinSession,
+      clearPinSession,
+    ],
   );
 
   return (

@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { TypingText } from './TypingText';
 import { Check, Star } from 'lucide-react';
+import { scrollToSection } from '../lib/scrollToSection';
 
 const plans = [
   {
@@ -54,12 +55,6 @@ const plans = [
 
 export function Pricing() {
   const reduce = useReducedMotion();
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
-    }
-  };
 
   return (
     <section id="pricing" aria-labelledby="pricing-title" className="py-20 md:py-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-950 dark:to-slate-900">

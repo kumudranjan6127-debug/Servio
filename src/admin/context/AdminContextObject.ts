@@ -18,6 +18,8 @@ export interface AdminContextValue {
   isAdmin: boolean;
   /** Permission check against the effective role. */
   can: (permission: Permission) => boolean;
+  /** Diagnostic info for debugging login issues (temporary). */
+  _debug: string | null;
 }
 
 export const AdminContext = createContext<AdminContextValue | null>(null);

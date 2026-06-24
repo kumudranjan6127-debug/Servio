@@ -1,11 +1,13 @@
-import { Settings as SettingsIcon, ShieldCheck, Users } from "lucide-react";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { useState } from "react";
+import { Settings as SettingsIcon, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { deleteDoc, doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
 import { db } from "@/Firebase/firebase";
 import { PageHeader } from "../components/PageHeader";
 import { RoleBadge } from "../components/RoleBadge";
 import { EmptyState } from "../components/EmptyState";
+import { AddAdminDialog } from "../components/AddAdminDialog";
 import { useAdmin } from "../context/useAdmin";
 import { usePinGate } from "../context/usePinGate";
 import { useSensitiveAction } from "../hooks/useSensitiveAction";
@@ -20,6 +22,7 @@ export function Settings() {
   const admins = useAdmins();
   const runSensitive = useSensitiveAction();
   const { reverify } = usePinGate();
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
 
   if (!admin) return null;
 
@@ -85,6 +88,30 @@ export function Settings() {
     }
   }
 
+  async function handleRemoveAdmin(row: AdminProfile) {
+    if (row.role === "super_admin" && !row.disabled && enabledSuperCount <= 1) {
+      toast.error("You can't remove the last enabled super admin.");
+      return;
+    }
+    try {
+      const ran = await runSensitive(async () => {
+        await deleteDoc(doc(db, COLLECTIONS.admins, row.uid));
+        await writeAuditLog({
+          actorUid: currentAdmin.uid,
+          actorEmail: currentAdmin.email,
+          action: "admin.remove",
+          targetType: "admin",
+          targetId: row.uid,
+          metadata: { email: row.email, role: row.role },
+        });
+      });
+      if (ran) toast.success(`Removed ${row.displayName} from admin access.`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Couldn't remove the admin. Please try again.");
+    }
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -122,11 +149,20 @@ export function Settings() {
       {/* 2) Admin users */}
       {can("admins:manage") && (
         <div className="rounded-xl border bg-card p-5 text-card-foreground">
-          <div className="mb-4 flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <h2 className="text-sm font-semibold text-foreground">
-              Admin users
-            </h2>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <h2 className="text-sm font-semibold text-foreground">
+                Admin users
+              </h2>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setShowAddAdmin(true)}
+            >
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              Add admin
+            </Button>
           </div>
           {admins.loading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
@@ -202,15 +238,27 @@ export function Settings() {
                           </select>
                         </td>
                         <td className="py-3">
-                          <Button
-                            variant={row.disabled ? "outline" : "destructive"}
-                            size="sm"
-                            disabled={locked}
-                            title={lockReason}
-                            onClick={() => void handleToggleDisabled(row)}
-                          >
-                            {row.disabled ? "Enable" : "Disable"}
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant={row.disabled ? "outline" : "destructive"}
+                              size="sm"
+                              disabled={locked}
+                              title={lockReason}
+                              onClick={() => void handleToggleDisabled(row)}
+                            >
+                              {row.disabled ? "Enable" : "Disable"}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={locked}
+                              title={locked ? lockReason : "Remove admin access"}
+                              onClick={() => void handleRemoveAdmin(row)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              Remove
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -220,6 +268,13 @@ export function Settings() {
             </div>
           )}
         </div>
+      )}
+
+      {showAddAdmin && (
+        <AddAdminDialog
+          currentAdmin={currentAdmin}
+          onClose={() => setShowAddAdmin(false)}
+        />
       )}
 
       {/* 3) System configuration */}

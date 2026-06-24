@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --open",
+    "icons": "node scripts/generate-icons.mjs",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "deploy": "npm run build && firebase deploy --only hosting",
     "deploy:preview": "npm run build && firebase hosting:channel:deploy preview"
   },
@@ -77,19 +81,25 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@tailwindcss/vite": "4.1.12",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.19.43",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@types/three": "^0.160.0",
     "@vitejs/plugin-react": "4.7.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.26",
     "globals": "^15.15.0",
+    "jsdom": "^29.1.1",
     "tailwindcss": "4.1.12",
     "typescript": "~5.7.3",
     "typescript-eslint": "^8.61.1",
-    "vite": "6.3.5"
+    "vite": "6.3.5",
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "react": "^18.3.1",

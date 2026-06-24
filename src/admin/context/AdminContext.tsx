@@ -1,5 +1,5 @@
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { doc, onSnapshot, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/Firebase/firebase";
 import { useAuth } from "@/Firebase/useAuth";
 import { AdminContext, AdminContextValue } from "./AdminContextObject";
@@ -20,6 +20,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
   const [docLoading, setDocLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [_debug, setDebug] = useState<string | null>(null);
+  const lastLoginRecorded = useRef<string | null>(null);
 
   useEffect(() => {
     // Local preview: skip Firebase entirely and inject a fake super_admin.
@@ -45,11 +47,20 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onSnapshot(
       ref,
       (snapshot) => {
-        setAdmin(
-          snapshot.exists()
-            ? parseAdminProfile(currentUser.uid, snapshot.data())
-            : null,
+        const exists = snapshot.exists();
+        const data = exists ? snapshot.data() : null;
+        const parsed = exists
+          ? parseAdminProfile(currentUser.uid, data!)
+          : null;
+        setDebug(
+          JSON.stringify({
+            uid: currentUser.uid,
+            docExists: exists,
+            rawData: data,
+            parsed: parsed ? "valid" : "null",
+          }),
         );
+        setAdmin(parsed);
         setDocLoading(false);
       },
       (err) => {
@@ -61,6 +72,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     return unsubscribe;
   }, [currentUser, authLoading]);
+
+  // Record lastLoginAt once per session when the admin profile resolves.
+  useEffect(() => {
+    if (DEV_MOCK_ENABLED || !admin || !currentUser) return;
+    if (lastLoginRecorded.current === currentUser.uid) return;
+    lastLoginRecorded.current = currentUser.uid;
+    const ref = doc(db, COLLECTIONS.admins, currentUser.uid);
+    updateDoc(ref, { lastLoginAt: serverTimestamp() }).catch(() => {
+      // Best-effort; swallow errors (e.g. offline).
+    });
+  }, [admin, currentUser]);
 
   // In mock mode the fake admin must be available synchronously on the first
   // render (before the effect runs), or the route guard bounces to /unauthorized.
@@ -82,6 +104,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       error,
       isAdmin,
       can,
+      _debug,
     }),
     [
       currentUser,
@@ -92,6 +115,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       error,
       isAdmin,
       can,
+      _debug,
     ],
   );
 
