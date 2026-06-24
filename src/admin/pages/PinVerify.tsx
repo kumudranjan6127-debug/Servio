@@ -240,7 +240,8 @@ export function PinVerify() {
             `Too many failed attempts. Account locked until ${new Date(lockedUntil).toLocaleTimeString()}. Signing out…`,
           );
           // Auto sign-out after a brief delay so the user sees the message.
-          setTimeout(() => void doSignOut(), LOCKOUT_SIGNOUT_DELAY_MS);
+          const t = setTimeout(() => void doSignOut(), LOCKOUT_SIGNOUT_DELAY_MS);
+          return () => clearTimeout(t);
         } else {
           setError(
             next === MAX_ATTEMPTS - 1
