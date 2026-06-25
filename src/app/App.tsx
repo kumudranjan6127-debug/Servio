@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from "react";
-import { Routes, Route, useLocation, BrowserRouter } from "react-router-dom";
+import { Route, useLocation, createBrowserRouter, RouterProvider, createRoutesFromElements, Outlet } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { SEO } from "./components/SEO";
 import { SITE_URL } from "./lib/siteConfig";
@@ -187,51 +187,61 @@ function LandingShell() {
   );
 }
 
+function RootLayout() {
+  return (
+    <ThemeProvider>
+      <ScrollToTop />
+      <AuthProvider>
+        <Suspense fallback={<PageSpinner />}>
+          <Outlet />
+        </Suspense>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
+
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route element={<RootLayout />}>
+      {/* Only the landing route is gated behind the splash intro. */}
+      <Route path="/" element={<LandingShell />} />
+      <Route path="/signin" element={<><SEO title="Sign In" noIndex /><SignIn /></>} />
+      <Route path="/signup" element={<><SEO title="Sign Up" noIndex /><SignUp /></>} />
+      <Route path="/admin/*" element={<AdminApp />} />
+      <Route path="/services/:slug" element={<ServiceDetailPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      <Route path="/cookie-policy" element={<CookiePolicy />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<DashboardOverview />} />
+        <Route path="progress" element={<ProjectProgress />} />
+        <Route path="updates" element={<UpdatesFeed />} />
+        <Route path="payments" element={<PaymentManagement />} />
+        <Route path="invoices" element={<InvoiceManagement />} />
+        <Route path="resources" element={<ProjectResources />} />
+        <Route path="estimation" element={<ProjectEstimation />} />
+        <Route path="pricing-config" element={<PricingConfig />} />
+        <Route path="notifications" element={<NotificationCenter />} />
+        <Route path="notification-preferences" element={<NotificationPreferences />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Route>
+  )
+);
+
 export default function App() {
   return (
     <HelmetProvider>
-    <div className="min-h-screen bg-white dark:bg-slate-950" style={{ fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif" }}>
-      <BrowserRouter>
-        <ThemeProvider>
-          <ScrollToTop />
-          <AuthProvider>
-            <Suspense fallback={<PageSpinner />}>
-              <Routes>
-                {/* Only the landing route is gated behind the splash intro. */}
-                <Route path="/" element={<LandingShell />} />
-                <Route path="/signin" element={<><SEO title="Sign In" noIndex /><SignIn /></>} />
-                <Route path="/signup" element={<><SEO title="Sign Up" noIndex /><SignUp /></>} />
-                <Route path="/admin/*" element={<AdminApp />} />
-                <Route path="/services/:slug" element={<ServiceDetailPage />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="/terms-of-service" element={<TermsOfService />} />
-                <Route path="/cookie-policy" element={<CookiePolicy />} />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <DashboardLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<DashboardOverview />} />
-                  <Route path="progress" element={<ProjectProgress />} />
-                  <Route path="updates" element={<UpdatesFeed />} />
-                  <Route path="payments" element={<PaymentManagement />} />
-                  <Route path="invoices" element={<InvoiceManagement />} />
-                  <Route path="resources" element={<ProjectResources />} />
-                  <Route path="estimation" element={<ProjectEstimation />} />
-                  <Route path="pricing-config" element={<PricingConfig />} />
-                  <Route path="notifications" element={<NotificationCenter />} />
-                  <Route path="notification-preferences" element={<NotificationPreferences />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </div>
+      <div className="min-h-screen bg-white dark:bg-slate-950" style={{ fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif" }}>
+        <RouterProvider router={router} />
+      </div>
     </HelmetProvider>
   );
 }
