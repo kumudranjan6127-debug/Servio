@@ -30,6 +30,9 @@ const ServiceDetailPage = lazy(() => import('./components/ServiceDetailPage').th
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService = lazy(() => import('./components/TermsOfService').then(m => ({ default: m.TermsOfService })));
 const CookiePolicy = lazy(() => import('./components/CookiePolicy').then(m => ({ default: m.CookiePolicy })));
+const About = lazy(() => import('./components/About').then(m => ({ default: m.About })));
+const Blog = lazy(() => import('./components/Blog').then(m => ({ default: m.Blog })));
+const Careers = lazy(() => import('./components/Careers').then(m => ({ default: m.Careers })));
 const DashboardLayout = lazy(() => import('../dashboard/components/DashboardLayout').then(m => ({ default: m.DashboardLayout })));
 const DashboardOverview = lazy(() => import('../dashboard/pages/DashboardOverview').then(m => ({ default: m.DashboardOverview })));
 const ProjectProgress = lazy(() => import('../dashboard/pages/ProjectProgress').then(m => ({ default: m.ProjectProgress })));
@@ -177,6 +180,9 @@ export default function App() {
               <Routes>
                 {/* Only the landing route is gated behind the splash intro. */}
                 <Route path="/" element={<LandingShell />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/careers" element={<Careers />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/admin/*" element={<AdminApp />} />

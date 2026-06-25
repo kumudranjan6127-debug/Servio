@@ -12,11 +12,11 @@ const services = [
 ];
 
 const company = [
-  { label: "About", href: null, section: null },
+  { label: "About", href: "/about", section: null },
   { label: "Portfolio", href: null, section: "portfolio" },
   { label: "Pricing", href: null, section: "pricing" },
-  { label: "Blog", href: null, section: null },
-  { label: "Careers", href: null, section: null },
+  { label: "Blog", href: "/blog", section: null },
+  { label: "Careers", href: "/careers", section: null },
 ];
 
 const socials = [
@@ -86,9 +86,9 @@ export function Footer() {
                       {label}
                     </SmoothLink>
                   ) : href ? (
-                    <a href={href} className="text-sm hover:text-indigo-400 transition-colors">
+                    <Link to={href} className="text-sm hover:text-indigo-400 transition-colors">
                       {label}
-                    </a>
+                    </Link>
                   ) : (
                     <span className="text-sm cursor-default">{label}</span>
                   )}
