@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import { SmoothLink } from "./SmoothLink";
 
 const services = [
-  "Landing Pages",
-  "Business Websites",
-  "Portfolio Websites",
-  "E-Commerce Stores",
-  "Custom Web Apps",
-  "Website Maintenance",
+  { label: "Landing Pages",        slug: "landing-pages" },
+  { label: "Business Websites",    slug: "business-websites" },
+  { label: "Portfolio Websites",   slug: "portfolio-websites" },
+  { label: "E-Commerce Stores",    slug: "e-commerce-stores" },
+  { label: "Custom Web Apps",      slug: "custom-web-applications" },
+  { label: "Website Maintenance",  slug: "website-maintenance" },
 ];
 
 const company = [
@@ -65,11 +65,11 @@ export function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-5">Services</h4>
             <ul className="space-y-3">
-              {services.map((s) => (
-                <li key={s}>
-                  <SmoothLink to="services" className="text-sm hover:text-indigo-400 transition-colors">
-                    {s}
-                  </SmoothLink>
+              {services.map(({ label, slug }) => (
+                <li key={slug}>
+                  <Link to={`/services/${slug}`} className="text-sm hover:text-indigo-400 transition-colors">
+                    {label}
+                  </Link>
                 </li>
               ))}
             </ul>
