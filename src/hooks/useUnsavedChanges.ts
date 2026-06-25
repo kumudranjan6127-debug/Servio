@@ -29,7 +29,7 @@
  *   <UnsavedChangesDialog blocker={blocker} />
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useBlocker } from "react-router-dom";
 
 export interface UnsavedChangesHook {
@@ -45,11 +45,16 @@ export interface UnsavedChangesHook {
 
 export function useUnsavedChanges(): UnsavedChangesHook {
   const [isDirty, setIsDirty] = useState(false);
+  // Ref mirror so the blocker reads the current value synchronously.
+  // React state updates are batched/async, so reading `isDirty` inside
+  // useBlocker can still be `true` when markClean() + navigate() are called
+  // back-to-back, incorrectly triggering the unsaved-changes dialog.
+  const isDirtyRef = useRef(false);
 
   // Block client-side route changes when the form is dirty.
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname
+      isDirtyRef.current && currentLocation.pathname !== nextLocation.pathname
   );
 
   // Block browser-level navigation (refresh, close, external URL).
@@ -70,12 +75,13 @@ export function useUnsavedChanges(): UnsavedChangesHook {
   // (e.g. the user navigated away via a programmatic route reset), clean up.
   useEffect(() => {
     return () => {
+      isDirtyRef.current = false;
       setIsDirty(false);
     };
   }, []);
 
-  const markDirty = useCallback(() => setIsDirty(true), []);
-  const markClean = useCallback(() => setIsDirty(false), []);
+  const markDirty = useCallback(() => { isDirtyRef.current = true;  setIsDirty(true);  }, []);
+  const markClean = useCallback(() => { isDirtyRef.current = false; setIsDirty(false); }, []);
 
   return { isDirty, markDirty, markClean, blocker };
 }
