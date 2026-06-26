@@ -350,6 +350,12 @@ service cloud.firestore {
              ['projectType', 'overallComplexity', 'features',
               'estimatedCostMin', 'estimatedCostMax',
               'estimatedTimeline', 'explanation'])
+        && request.resource.data.result.keys().hasAll(
+             ['projectType', 'overallComplexity', 'features',
+              'estimatedCostMin', 'estimatedCostMax',
+              'estimatedTimeline', 'explanation'])
+        && request.resource.data.result.overallComplexity in
+             ['low', 'medium', 'high', 'enterprise']
         && request.resource.data.result.estimatedCostMin is number
         && request.resource.data.result.estimatedCostMax is number
         && request.resource.data.result.features is list
