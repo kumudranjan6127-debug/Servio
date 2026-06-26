@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import {
-  LayoutDashboard,
   GitBranch,
   CreditCard,
   Bell,
@@ -35,7 +34,7 @@ const recentUpdateDateFormatter = new Intl.DateTimeFormat("en-US", {
 const inr = (value: number) => `₹${value.toLocaleString("en-IN")}`;
 
 export function DashboardOverview() {
-  const { projects, loading, isDemo } = useProjects();
+  const { projects, loading } = useProjects();
   const {
     updates: recentUpdates,
     loading: updatesLoading,
@@ -63,21 +62,18 @@ export function DashboardOverview() {
     );
   }
 
-  const project = projects[0];
-  if (!project) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <LayoutDashboard className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          No Projects Yet
-        </h2>
-        <p className="mt-2 text-gray-500 dark:text-gray-400 max-w-sm">
-          Your projects will appear here once they are created. Contact the team
-          to get started.
-        </p>
-      </div>
-    );
-  }
+  const project = projects[0] || {
+    id: "dummy",
+    name: "No Active Project",
+    description: "You do not have any active projects yet. Your projects will appear here once they are created.",
+    status: "on_hold",
+    currentStage: "requirements",
+    stages: {},
+    updates: [],
+    invoices: [],
+    resources: [],
+    createdAt: new Date().toISOString(),
+  };
 
   const stageValues = Object.values(project.stages ?? {});
   const overallProgress =
@@ -96,9 +92,9 @@ export function DashboardOverview() {
     (s) => s.status === "completed",
   ).length;
 
-  const currentStageLabel =
-    PROJECT_STAGES.find((s) => s.key === project.currentStage)?.label ??
-    project.currentStage;
+  const currentStageLabel = projects[0]
+    ? (PROJECT_STAGES.find((s) => s.key === project.currentStage)?.label ?? project.currentStage)
+    : "Not Started";
 
   // Payment figures come from the client's real, email-addressed billing — not
   // the project record — and load independently, so the stat card reflects the
@@ -112,7 +108,8 @@ export function DashboardOverview() {
   } else if (paymentsError) {
     paymentValue = "Unavailable";
   } else if (!billing) {
-    paymentValue = "Not set up";
+    paymentValue = "₹0 paid";
+    paymentSubtitle = "₹0 remaining";
   } else {
     paymentValue = `${inr(billing.amountPaid)} paid`;
     paymentSubtitle = `${inr(billing.remaining)} remaining`;
@@ -152,13 +149,6 @@ export function DashboardOverview() {
 
   return (
     <div className="space-y-6">
-      {isDemo && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-          Showing demo data. Your real projects will appear here once
-          configured in Firestore.
-        </div>
-      )}
-
       <motion.div {...fadeUp}>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           Dashboard
@@ -378,10 +368,36 @@ export function DashboardOverview() {
                   </p>
                 </div>
               ) : !billing ? (
-                <div className="flex flex-col items-center py-6 text-center">
-                  <CreditCard className="h-8 w-8 text-gray-300 dark:text-gray-600 mb-2" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    No payment information yet
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Total Cost
+                      </p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        ₹0
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Paid
+                      </p>
+                      <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                        ₹0
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Remaining
+                      </p>
+                      <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                        ₹0
+                      </p>
+                    </div>
+                  </div>
+                  <Progress value={0} className="h-2" />
+                  <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                    0% of total paid
                   </p>
                 </div>
               ) : (
