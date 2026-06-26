@@ -17,7 +17,18 @@
 
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/Firebase/firebase";
-import type { QuoteFormData } from "./quoteValidation";
+import { LIMITS, validateFields, hasErrors, type QuoteFormData } from "./quoteValidation";
+
+/**
+ * Strip non-printable control characters (keep tab, newline, carriage-return)
+ * and hard-clamp to maxChars. Applied to every free-text field before writing
+ * to Firestore, so the storage layer always sees bounded, clean strings
+ * regardless of how submitQuote is called.
+ */
+function sanitize(value: string, maxChars: number): string {
+  // eslint-disable-next-line no-control-regex
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").slice(0, maxChars);
+}
 
 /**
  * Where new-lead notifications are emailed. MUST match the `to ==` recipient in
@@ -51,13 +62,14 @@ function escapeHtml(value: string): string {
  * both writes. No Firebase, no DOM — safe to unit test and to reuse server-side.
  */
 export function buildQuoteSummary(form: QuoteFormData): QuoteSummary {
-  const name = form.name.trim();
-  const email = form.email.trim();
-  const phone = form.phone.trim();
-  const business = form.business.trim();
-  const budget = form.budget.trim();
-  const type = form.type.trim();
-  const description = form.description.trim();
+  const name     = sanitize(form.name.trim(),        LIMITS.name[1]);
+  const email    = sanitize(form.email.trim(),       LIMITS.email[1]);
+  const phone    = sanitize(form.phone.trim(),       LIMITS.phone[1]);
+  const business = sanitize(form.business.trim(),    LIMITS.business[1]);
+  // budget and type are enum values — validated against the allowed set below.
+  const budget      = form.budget.trim();
+  const type        = form.type.trim();
+  const description = sanitize(form.description.trim(), LIMITS.description[1]);
 
   const subject = `New quote request: ${type} — ${business}`;
 
@@ -118,6 +130,14 @@ export function buildMailData(summary: QuoteSummary) {
  * itself could not be saved; a failed email queue write is logged and swallowed.
  */
 export async function submitQuote(form: QuoteFormData): Promise<void> {
+  // Server-side guard: re-run field validation before any Firestore write.
+  // The UI already calls evaluateSubmission(), but submitQuote must be safe
+  // to call from any context, including tests and future server handlers.
+  const errors = validateFields(form);
+  if (hasErrors(errors)) {
+    throw new Error("Quote submission rejected: invalid form data.");
+  }
+
   const summary = buildQuoteSummary(form);
 
   // 1. Durable lead record — must succeed; a failure propagates to the caller.
