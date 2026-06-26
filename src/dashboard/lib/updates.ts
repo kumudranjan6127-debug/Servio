@@ -41,14 +41,16 @@ function toDate(value: unknown): Date | null {
     };
     if (typeof ts.toDate === "function") {
       try {
-        return ts.toDate();
+        const d = ts.toDate();
+        return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null;
       } catch {
         /* fall through */
       }
     }
     if (typeof ts.toMillis === "function") {
       try {
-        return new Date(ts.toMillis());
+        const d = new Date(ts.toMillis());
+        return Number.isNaN(d.getTime()) ? null : d;
       } catch {
         /* fall through */
       }

@@ -64,15 +64,22 @@ export function UpdatesFeed() {
   const { updates, loading, error, needsEmailVerification } = useClientUpdates();
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   async function handleResendVerification() {
     if (!auth.currentUser) return;
     setResending(true);
+    setSendError(null);
     try {
       await sendEmailVerification(auth.currentUser);
       setResent(true);
-    } catch {
-      /* allow the user to try again */
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code === "auth/too-many-requests") {
+        setSendError("Too many attempts. Please wait a few minutes and try again.");
+      } else {
+        setSendError("Failed to send verification email. Please try again.");
+      }
     } finally {
       setResending(false);
     }
@@ -127,14 +134,21 @@ export function UpdatesFeed() {
               Verification email sent — check your inbox.
             </p>
           ) : (
-            <button
-              type="button"
-              onClick={handleResendVerification}
-              disabled={resending}
-              className="mt-4 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:opacity-60"
-            >
-              {resending ? "Sending…" : "Resend verification email"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="mt-4 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:opacity-60"
+              >
+                {resending ? "Sending…" : "Resend verification email"}
+              </button>
+              {sendError && (
+                <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-400">
+                  {sendError}
+                </p>
+              )}
+            </>
           )}
         </div>
       ) : updates.length === 0 ? (
