@@ -74,6 +74,7 @@ function useCollectionData<T>(
   parse: (id: string, data: DocumentData) => T | null,
   compare?: (a: T, b: T) => number,
   mock?: T[],
+  enabled = true,
 ): CollectionState<T> {
   const [state, setState] = useState<CollectionState<T>>({
     data: [],
@@ -82,6 +83,10 @@ function useCollectionData<T>(
   });
 
   useEffect(() => {
+    if (!enabled) {
+      setState({ data: [], loading: false, error: null });
+      return;
+    }
     // Local preview: serve demo data instead of subscribing to Firestore.
     if (DEV_MOCK_ENABLED) {
       const data = mock ? [...mock] : [];
@@ -104,7 +109,7 @@ function useCollectionData<T>(
       (err) => setState({ data: [], loading: false, error: err.message }),
     );
     return unsubscribe;
-  }, [ref, parse, compare, mock]);
+  }, [ref, parse, compare, mock, enabled]);
 
   return state;
 }
@@ -140,12 +145,13 @@ export function useProjectBilling(): CollectionState<ProjectBilling> {
   );
 }
 
-export function useClients(): CollectionState<Client> {
+export function useClients(enabled = true): CollectionState<Client> {
   return useCollectionData(
     clientsCollection,
     parseClient,
     byCreatedDesc,
     DEV_MOCK_ENABLED ? MOCK_CLIENTS : undefined,
+    enabled,
   );
 }
 
