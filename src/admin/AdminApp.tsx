@@ -14,6 +14,7 @@ const PinVerify = lazy(() => import('./pages/PinVerify').then(m => ({ default: m
 const PinSetup = lazy(() => import('./pages/PinSetup').then(m => ({ default: m.PinSetup })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Projects = lazy(() => import('./pages/Projects').then(m => ({ default: m.Projects })));
+const ProjectUpdates = lazy(() => import('./pages/ProjectUpdates').then(m => ({ default: m.ProjectUpdates })));
 const Clients = lazy(() => import('./pages/Clients').then(m => ({ default: m.Clients })));
 const Messages = lazy(() => import('./pages/Messages').then(m => ({ default: m.Messages })));
 const Audit = lazy(() => import('./pages/Audit').then(m => ({ default: m.Audit })));
@@ -70,6 +71,14 @@ export function AdminApp() {
                   element={
                     <RequirePermission permission="projects:view">
                       <Projects />
+                    </RequirePermission>
+                  }
+                />
+                <Route
+                  path="updates"
+                  element={
+                    <RequirePermission permission="projects:view">
+                      <ProjectUpdates />
                     </RequirePermission>
                   }
                 />
