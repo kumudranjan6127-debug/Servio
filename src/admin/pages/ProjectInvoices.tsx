@@ -247,7 +247,7 @@ export function ProjectInvoices() {
       const auditOk = await writeAuditLog({
         actorUid: admin.uid,
         actorEmail: admin.email,
-        action: editingId ? "invoice.update" : "invoice.create",
+        action: editingId ? "project_invoice.update" : "project_invoice.create",
         targetType: "projectInvoice",
         targetId: editingId ?? undefined,
         metadata: { clientEmail: email, number: trimmedNumber, status },
@@ -278,7 +278,7 @@ export function ProjectInvoices() {
       const auditOk = await writeAuditLog({
         actorUid: admin.uid,
         actorEmail: admin.email,
-        action: "invoice.delete",
+        action: "project_invoice.delete",
         targetType: "projectInvoice",
         targetId: invoice.id,
         metadata: { clientEmail: invoice.clientEmail, number: invoice.number },
