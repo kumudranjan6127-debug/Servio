@@ -219,7 +219,7 @@ service cloud.firestore {
     match /portfolio/{id} {
       function validPortfolioData(data) {
         return data.title is string
-          && data.title.size() > 0
+          && data.title.matches('.*\\S.*')
           && data.title.size() < 200
           && data.description is string
           && data.description.size() < 5000
