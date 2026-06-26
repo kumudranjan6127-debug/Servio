@@ -19,7 +19,6 @@ import {
   Moon,
   Sun,
   Sparkles,
-  Settings2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../app/components/ui/avatar";
 import { Button } from "../../app/components/ui/button";
@@ -36,7 +35,6 @@ const NAV_ITEMS = [
   { to: "/dashboard/invoices", icon: FileText, label: "Invoices" },
   { to: "/dashboard/resources", icon: FolderOpen, label: "Resources" },
   { to: "/dashboard/estimation", icon: Sparkles, label: "AI Estimate" },
-  { to: "/dashboard/pricing-config", icon: Settings2, label: "Pricing Config" },
 ];
 
 function NavLink({

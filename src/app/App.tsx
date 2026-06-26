@@ -42,7 +42,6 @@ const PaymentManagement = lazy(() => import('../dashboard/pages/PaymentManagemen
 const InvoiceManagement = lazy(() => import('../dashboard/pages/InvoiceManagement').then(m => ({ default: m.InvoiceManagement })));
 const ProjectResources = lazy(() => import('../dashboard/pages/ProjectResources').then(m => ({ default: m.ProjectResources })));
 const ProjectEstimation = lazy(() => import('../dashboard/pages/ProjectEstimation').then(m => ({ default: m.ProjectEstimation })));
-const PricingConfig = lazy(() => import('../dashboard/pages/PricingConfig').then(m => ({ default: m.PricingConfig })));
 const NotificationCenter = lazy(() => import('../dashboard/notifications/NotificationCenter').then(m => ({ default: m.NotificationCenter })));
 const NotificationPreferences = lazy(() => import('../dashboard/notifications/NotificationPreferences').then(m => ({ default: m.NotificationPreferences })));
 const About = lazy(() => import('./components/About').then(m => ({ default: m.About })));
@@ -235,7 +234,6 @@ const router = createBrowserRouter(
         <Route path="invoices" element={<InvoiceManagement />} />
         <Route path="resources" element={<ProjectResources />} />
         <Route path="estimation" element={<ProjectEstimation />} />
-        <Route path="pricing-config" element={<PricingConfig />} />
         <Route path="notifications" element={<NotificationCenter />} />
         <Route path="notification-preferences" element={<NotificationPreferences />} />
       </Route>
