@@ -1,7 +1,7 @@
 import { useState, useId } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from './firebase';
 import { notifyWelcome } from '../dashboard/notifications/notificationTriggers';
 import { Home, Check, X, Eye, EyeOff, AlertCircle } from 'lucide-react';
@@ -250,6 +250,13 @@ export function SignUp() {
 
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      // Send a verification mail so the account can unlock email-addressed
+      // features (e.g. project updates). Best-effort — never block sign-up on it.
+      try {
+        await sendEmailVerification(user);
+      } catch {
+        /* non-fatal: the user can resend from the dashboard */
+      }
       notifyWelcome(user.uid, user.displayName ?? user.email ?? 'there');
       markClean();
       navigate('/dashboard');

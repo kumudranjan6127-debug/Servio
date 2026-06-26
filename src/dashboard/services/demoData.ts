@@ -59,48 +59,9 @@ export const DEMO_PROJECT: Project = {
   },
   totalCost: 30000,
   amountPaid: 15000,
-  updates: [
-    {
-      id: "u1",
-      title: "Homepage completed",
-      description:
-        "The homepage layout, hero section, and animations have been finalized and approved.",
-      date: "2026-06-18",
-      type: "milestone",
-    },
-    {
-      id: "u2",
-      title: "Authentication integrated",
-      description:
-        "Firebase Authentication has been integrated with email/password and Google sign-in support.",
-      date: "2026-06-15",
-      type: "feature",
-    },
-    {
-      id: "u3",
-      title: "Mobile responsiveness implemented",
-      description:
-        "All completed pages are now fully responsive across mobile, tablet, and desktop breakpoints.",
-      date: "2026-06-12",
-      type: "feature",
-    },
-    {
-      id: "u4",
-      title: "Testing in progress",
-      description:
-        "Unit and integration tests are being written for core components and API routes.",
-      date: "2026-06-10",
-      type: "info",
-    },
-    {
-      id: "u5",
-      title: "Design system finalized",
-      description:
-        "Color palette, typography, and component library have been established.",
-      date: "2026-05-20",
-      type: "milestone",
-    },
-  ],
+  // Updates are no longer mocked here — the client dashboard reads real,
+  // admin-authored updates from the `projectUpdates` collection (issue #167).
+  updates: [],
   payments: [
     {
       id: "p1",

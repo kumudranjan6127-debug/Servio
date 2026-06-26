@@ -16,6 +16,7 @@ import { Progress } from "../../app/components/ui/progress";
 import { Separator } from "../../app/components/ui/separator";
 import { Skeleton } from "../../app/components/ui/skeleton";
 import { useProjects } from "../hooks/useProjects";
+import { useClientUpdates } from "../hooks/useClientUpdates";
 import { PROJECT_STAGES } from "../types";
 
 const fadeUp = {
@@ -24,8 +25,20 @@ const fadeUp = {
   transition: { duration: 0.4 },
 };
 
+const recentUpdateDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 export function DashboardOverview() {
   const { projects, loading, isDemo } = useProjects();
+  const {
+    updates: recentUpdates,
+    loading: updatesLoading,
+    error: updatesError,
+    needsEmailVerification,
+  } = useClientUpdates();
 
   if (loading) {
     return (
@@ -244,23 +257,54 @@ export function DashboardOverview() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {project.updates.slice(0, 3).map((update) => (
-                  <div key={update.id} className="flex gap-3">
-                    <div className="mt-1">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              {updatesLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10" />
+                  ))}
+                </div>
+              ) : updatesError ? (
+                <div className="flex flex-col items-center py-6 text-center" role="alert">
+                  <Bell className="h-8 w-8 text-red-300 dark:text-red-500/70 mb-2" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Couldn&apos;t load updates
+                  </p>
+                </div>
+              ) : needsEmailVerification ? (
+                <div className="flex flex-col items-center py-6 text-center">
+                  <Bell className="h-8 w-8 text-indigo-300 dark:text-indigo-500/70 mb-2" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Verify your email to see updates
+                  </p>
+                </div>
+              ) : recentUpdates.length === 0 ? (
+                <div className="flex flex-col items-center py-6 text-center">
+                  <Bell className="h-8 w-8 text-gray-300 dark:text-gray-600 mb-2" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No updates yet
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentUpdates.slice(0, 3).map((update) => (
+                    <div key={update.id} className="flex gap-3">
+                      <div className="mt-1">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {update.title}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {update.createdAt
+                            ? recentUpdateDateFormatter.format(update.createdAt)
+                            : "Just now"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {update.title}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        {update.date}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

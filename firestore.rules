@@ -93,6 +93,57 @@ service cloud.firestore {
       allow delete:         if can('projects:delete');
     }
 
+    // ---- project updates (admin -> client feed) ------------------------
+
+    // Updates an admin posts for a client's project, shown on the client
+    // dashboard's Updates section. Addressed by the client's email (the only
+    // identifier shared between what an admin knows and the client's auth
+    // token), stored lowercased so the read comparison is case-insensitive.
+    match /projectUpdates/{id} {
+      // A signed-in client may read ONLY the updates addressed to their own
+      // email — and only once that email is VERIFIED, since addressing is by
+      // email and Firebase lets anyone register an arbitrary (unverified)
+      // address. Without this check an attacker could pre-register an unclaimed
+      // client's email and read their feed. The client app sends a verification
+      // mail on sign-up and gates the Updates UI on `emailVerified`; Google
+      // sign-in is verified automatically. Any admin who can view projects may
+      // read all. The match is case-insensitive (lowercased on both sides).
+      allow read: if can('projects:view')
+        || (
+          isSignedIn()
+          && request.auth.token.email != null
+          && request.auth.token.email_verified == true
+          && resource.data.clientEmail == request.auth.token.email.lower()
+        );
+
+      // Only admins who can edit projects may post. The shape is pinned hard so
+      // the collection can never be abused as arbitrary client-writable storage:
+      // exact key set, bounded sizes, a known `type`, an email that is already
+      // lowercased (so reads match), and a server-stamped timestamp.
+      allow create: if can('projects:edit')
+        && request.resource.data.keys().hasOnly(
+             ['clientEmail', 'title', 'description', 'type', 'createdAt'])
+        && request.resource.data.keys().hasAll(
+             ['clientEmail', 'title', 'description', 'type', 'createdAt'])
+        && request.resource.data.clientEmail is string
+        && request.resource.data.clientEmail.size() > 0
+        && request.resource.data.clientEmail.size() < 320
+        && request.resource.data.clientEmail == request.resource.data.clientEmail.lower()
+        && request.resource.data.clientEmail.matches('^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$')
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() < 200
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && request.resource.data.description.size() < 5000
+        && request.resource.data.type in ['feature', 'bugfix', 'milestone', 'info']
+        && request.resource.data.createdAt == request.time;
+
+      // Updates are immutable once posted; an editing admin may remove them.
+      allow update: if false;
+      allow delete: if can('projects:edit');
+    }
+
     // ---- clients -------------------------------------------------------
 
     match /clients/{id} {

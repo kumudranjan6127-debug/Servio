@@ -55,6 +55,23 @@ export interface Project {
   updatedAt?: Timestamp;
 }
 
+/** The category of a client-facing project update. */
+export type UpdateType = "feature" | "bugfix" | "milestone" | "info";
+
+/**
+ * A document in the `projectUpdates` collection — an update an admin posts for a
+ * client, shown on the client dashboard. Addressed by the client's (lowercased)
+ * email, the only identifier shared between the admin and the client's auth.
+ */
+export interface ProjectUpdate {
+  id: string;
+  clientEmail: string;
+  title: string;
+  description: string;
+  type: UpdateType;
+  createdAt?: Timestamp;
+}
+
 /** A document in the `clients` collection. */
 export interface Client {
   id: string;

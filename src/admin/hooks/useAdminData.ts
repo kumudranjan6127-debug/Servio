@@ -15,7 +15,9 @@ import {
   parseClient,
   parseMessage,
   parseProject,
+  parseProjectUpdate,
   projectsCollection,
+  projectUpdatesCollection,
 } from "../lib/collections";
 import {
   AdminProfile,
@@ -23,6 +25,7 @@ import {
   Client,
   ContactMessage,
   Project,
+  ProjectUpdate,
 } from "../types";
 import {
   DEV_MOCK_ENABLED,
@@ -105,6 +108,15 @@ export function useProjects(): CollectionState<Project> {
     parseProject,
     byCreatedDesc,
     DEV_MOCK_ENABLED ? MOCK_PROJECTS : undefined,
+  );
+}
+
+export function useProjectUpdates(): CollectionState<ProjectUpdate> {
+  // No dev-mock dataset — in local preview this simply shows an empty feed.
+  return useCollectionData(
+    projectUpdatesCollection,
+    parseProjectUpdate,
+    byCreatedDesc,
   );
 }
 

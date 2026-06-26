@@ -8,6 +8,7 @@ import {
   PHASE_LABEL,
   type LoadingPhase,
 } from "../constants/splash";
+import { hasPlayedSplash, markSplashPlayed } from "../lib/splashSession";
 
 export interface AppLoadingState {
   /** Machine state: 'initializing' | 'assets' | 'preparing' | 'ready' | 'error'. */
@@ -52,10 +53,25 @@ export function useAppLoading(): AppLoadingState {
   }
   const reducedMotion = reducedRef.current;
 
+  // The splash is a first-open greeting. If it has already played this session
+  // (e.g. the user is navigating back to "/" from the dashboard), resolve to the
+  // ready state immediately and skip the whole loading machine — no overlay, no
+  // scroll-lock, no re-run of the resource gating. Resolved ONCE per mount so a
+  // mid-load change can't flip it. See issue #162.
+  const skipSplashRef = useRef<boolean | null>(null);
+  if (skipSplashRef.current === null) {
+    skipSplashRef.current = hasPlayedSplash();
+  }
+  const skipSplash = skipSplashRef.current;
+
   const [snapshot, setSnapshot] = useState<{
     phase: LoadingPhase;
     progress: number;
-  }>({ phase: "initializing", progress: 0 });
+  }>(() =>
+    skipSplash
+      ? { phase: "ready", progress: 100 }
+      : { phase: "initializing", progress: 0 },
+  );
 
   // Bumping runId re-runs the whole detection effect — this is the soft retry.
   const [runId, setRunId] = useState(0);
@@ -83,6 +99,12 @@ export function useAppLoading(): AppLoadingState {
   }, []);
 
   useEffect(() => {
+    // Already greeted this session — the landing is revealed; nothing to drive.
+    if (skipSplash) return;
+    // We're about to show it: remember that for the rest of the session so a
+    // later remount of "/" (client-side navigation) reveals the landing instantly.
+    markSplashPlayed();
+
     let mounted = true;
     const reduced = reducedRef.current ?? false;
     const minDisplayMs = reduced ? MIN_DISPLAY_REDUCED_MS : MIN_DISPLAY_MS;
@@ -228,7 +250,9 @@ export function useAppLoading(): AppLoadingState {
       heroImg.onload = null;
       heroImg.onerror = null;
     };
-  }, [runId]);
+    // `skipSplash` is resolved once per mount (set-once ref) so it never
+    // actually re-fires this effect; it's listed to satisfy exhaustive-deps.
+  }, [runId, skipSplash]);
 
   return {
     phase: snapshot.phase,

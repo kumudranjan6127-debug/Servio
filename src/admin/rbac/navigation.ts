@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   FolderKanban,
+  Megaphone,
   Users,
   MessageSquare,
   ClipboardList,
@@ -25,6 +26,7 @@ export interface NavItem {
 export const ADMIN_NAV: readonly NavItem[] = [
   { to: "dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard:view" },
   { to: "projects", label: "Projects", icon: FolderKanban, permission: "projects:view" },
+  { to: "updates", label: "Updates", icon: Megaphone, permission: "projects:view" },
   { to: "clients", label: "Clients", icon: Users, permission: "clients:view" },
   { to: "messages", label: "Messages", icon: MessageSquare, permission: "messages:view" },
   { to: "audit", label: "Audit", icon: ClipboardList, permission: "audit:view" },

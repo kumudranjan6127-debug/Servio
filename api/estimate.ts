@@ -48,7 +48,8 @@ Use this exact schema:
   "hasSignificantUnknowns": boolean
 }
 
-Do NOT include any cost estimates, pricing, or monetary values.`;
+Do NOT include any cost estimates, pricing, or monetary values.
+Ensure all string values are properly escaped and that the output is strictly valid JSON.`;
 }
 
 function validateClassification(
@@ -102,7 +103,7 @@ export default async function handler(
   // 1. Configure CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   // In production, you can replace '*' with your Firebase hosting URL for better security
-  res.setHeader('Access-Control-Allow-Origin', '*'); 
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
   res.setHeader(
     'Access-Control-Allow-Headers',
@@ -136,7 +137,7 @@ export default async function handler(
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const classificationPrompt = buildClassificationPrompt(featureCategories);
 
@@ -153,7 +154,7 @@ export default async function handler(
       ],
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 8192,
         responseMimeType: "application/json",
       },
     });
@@ -163,7 +164,27 @@ export default async function handler(
       throw new Error("AI returned an empty response.");
     }
 
-    const parsed = JSON.parse(responseText);
+    let parsed;
+    try {
+      // 1. Strip markdown
+      let cleanText = responseText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+      
+      // 2. Extract just the JSON object if there's conversational text around it
+      const match = cleanText.match(/\{[\s\S]*\}/);
+      if (match) cleanText = match[0];
+
+      // 3. Remove all literal newlines to prevent "unterminated string" errors
+      cleanText = cleanText.replace(/[\r\n]+/g, ' ');
+      
+      // 4. Remove trailing commas
+      cleanText = cleanText.replace(/,\s*([\]}])/g, '$1');
+      
+      parsed = JSON.parse(cleanText);
+    } catch (parseError) {
+      console.error("Failed to parse Gemini response. Raw response was:");
+      console.error(responseText);
+      throw parseError;
+    }
     const classification = validateClassification(parsed, new Set(featureCategories));
 
     return res.status(200).json(classification);

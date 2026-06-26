@@ -133,6 +133,16 @@ This satisfies the issue's examples:
 // status: 'lead' | 'active' | 'on_hold' | 'completed' | 'archived'
 ```
 
+### `projectUpdates/{id}`
+```ts
+{ clientEmail, title, description, type, createdAt }
+// type: 'feature' | 'bugfix' | 'milestone' | 'info'
+// clientEmail is stored lowercased; it addresses the update to a client. The
+// client dashboard reads only the updates whose clientEmail matches their own
+// verified auth-token email. Admins with projects:edit post/remove updates
+// (Admin → Updates); writes are shape- and size-validated by the rules.
+```
+
 ### `clients/{id}`
 ```ts
 { name, company?, email, phone?, notes?, createdAt?, updatedAt? }

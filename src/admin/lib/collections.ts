@@ -9,12 +9,15 @@ import {
   MessageStatus,
   Project,
   ProjectStatus,
+  ProjectUpdate,
+  UpdateType,
 } from "../types";
 
 /** Firestore collection names — single source of truth. */
 export const COLLECTIONS = {
   admins: "admins",
   projects: "projects",
+  projectUpdates: "projectUpdates",
   clients: "clients",
   messages: "messages",
   auditLogs: "audit_logs",
@@ -22,6 +25,10 @@ export const COLLECTIONS = {
 
 export const adminsCollection = collection(db, COLLECTIONS.admins);
 export const projectsCollection = collection(db, COLLECTIONS.projects);
+export const projectUpdatesCollection = collection(
+  db,
+  COLLECTIONS.projectUpdates,
+);
 export const clientsCollection = collection(db, COLLECTIONS.clients);
 export const messagesCollection = collection(db, COLLECTIONS.messages);
 export const auditLogsCollection = collection(db, COLLECTIONS.auditLogs);
@@ -32,6 +39,12 @@ const PROJECT_STATUSES: readonly ProjectStatus[] = [
   "on_hold",
   "completed",
   "archived",
+];
+const UPDATE_TYPES: readonly UpdateType[] = [
+  "feature",
+  "bugfix",
+  "milestone",
+  "info",
 ];
 const MESSAGE_STATUSES: readonly MessageStatus[] = [
   "new",
@@ -95,6 +108,23 @@ export function parseProject(id: string, data: DocumentData): Project {
     description: optionalStr(data.description),
     createdAt: ts(data.createdAt),
     updatedAt: ts(data.updatedAt),
+  };
+}
+
+export function parseProjectUpdate(
+  id: string,
+  data: DocumentData,
+): ProjectUpdate {
+  const type = UPDATE_TYPES.includes(data.type as UpdateType)
+    ? (data.type as UpdateType)
+    : "info";
+  return {
+    id,
+    clientEmail: str(data.clientEmail),
+    title: str(data.title, "Untitled update"),
+    description: str(data.description),
+    type,
+    createdAt: ts(data.createdAt),
   };
 }
 

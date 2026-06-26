@@ -16,6 +16,14 @@ export const FALLBACK_MS = 10000;
 /** Overlay stacking context — above everything in the app. */
 export const SPLASH_Z_INDEX = 9999;
 
+// The brand intro is a *first-open* greeting, not a per-route transition. We
+// persist a flag for the lifetime of the browsing session (one tab) so that
+// returning to "/" via client-side navigation — e.g. clicking the logo from the
+// dashboard — reveals the landing instantly instead of replaying the splash.
+// sessionStorage (not localStorage) is deliberate: a brand-new session/tab is a
+// genuine "opening" and should be greeted again. See issue #162.
+export const SPLASH_SESSION_KEY = "servio:splash-played";
+
 export type LoadingPhase =
   | "initializing"
   | "assets"

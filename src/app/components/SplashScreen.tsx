@@ -47,6 +47,12 @@ const EXIT_EASE: [number, number, number, number] = [0.4, 0, 0.2, 1];
 const OVERLAY_BG =
   "linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 50%, #0f0f1a 100%)";
 
+// Static SVG film grain — a single tiled fractal-noise tile. Adds cinematic
+// texture over the whole overlay for depth; it never animates, so it's cheap
+// and reduced-motion safe.
+const GRAIN_URL =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
 export function SplashScreen({
   phase,
   label,
@@ -167,20 +173,34 @@ export function SplashScreen({
         pointerEvents: phase === "ready" ? "none" : "auto",
       }}
     >
-      {/* Decorative glow blobs (transform/opacity only — never animate blur). */}
+      {/* Decorative ambient field (transform/opacity only — never animate blur). */}
       <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
+        {/* Slow, deep color-wheel wash so the now-compact card floats in a rich,
+            living field. Huge + heavily blurred + very low opacity → it reads as
+            volumetric light, not a visible gradient. Motion-only. */}
+        {!r && (
+          <motion.div
+            className="absolute left-1/2 top-1/2 h-[100vmax] w-[100vmax] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.08] blur-3xl"
+            style={{
+              background:
+                "conic-gradient(from 0deg, #4F46E5, #7C3AED, #06B6D4, #10B981, #4F46E5)",
+            }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 44, repeat: Infinity, ease: "linear" }}
+          />
+        )}
         <motion.div
-          className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-indigo-600/30 blur-2xl md:blur-3xl"
-          animate={r ? undefined : { opacity: [0.35, 0.6, 0.35], scale: [1, 1.08, 1] }}
+          className="absolute -top-24 -left-16 h-80 w-80 rounded-full bg-indigo-600/30 blur-2xl md:blur-3xl"
+          animate={r ? undefined : { opacity: [0.35, 0.6, 0.35], scale: [1, 1.1, 1], x: [0, 24, 0] }}
           transition={r ? undefined : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-purple-600/30 blur-2xl md:blur-3xl"
-          animate={r ? undefined : { opacity: [0.5, 0.3, 0.5], scale: [1.08, 1, 1.08] }}
+          className="absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-purple-600/30 blur-2xl md:blur-3xl"
+          animate={r ? undefined : { opacity: [0.5, 0.3, 0.5], scale: [1.1, 1, 1.1], x: [0, -24, 0] }}
           transition={r ? undefined : { duration: 4, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/15 blur-2xl md:blur-3xl"
+          className="absolute top-1/2 left-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/15 blur-2xl md:blur-3xl"
           animate={r ? undefined : { opacity: [0.25, 0.45, 0.25] }}
           transition={r ? undefined : { duration: 5, repeat: Infinity, ease: "easeInOut" }}
         />
@@ -206,124 +226,158 @@ export function SplashScreen({
         }}
       />
 
-      <motion.div
-        variants={cardVariants}
-        className="relative z-10 flex w-full max-w-sm flex-col items-center gap-5 rounded-3xl border border-white/10 bg-white/5 px-6 py-9 text-center shadow-2xl shadow-black/40 backdrop-blur-xl md:gap-6 md:px-10 md:py-12"
-      >
-        {isError ? (
-          <>
-            <div
-              aria-hidden="true"
-              className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-3xl"
-            >
-              ⚠️
-            </div>
-            <h2
-              id="splash-error-title"
-              className="text-xl font-bold text-white md:text-2xl"
-            >
-              {label}
-            </h2>
-            <p id="splash-error-desc" className="text-sm text-slate-400">
-              Please check your connection and try again.
-            </p>
-            <button
-              ref={retryButtonRef}
-              type="button"
-              onClick={onRetry}
-              className="mt-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-2.5 font-medium text-white shadow-lg shadow-indigo-500/25 transition-all hover:shadow-indigo-500/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-            >
-              Retry
-            </button>
-          </>
-        ) : (
-          <>
-            {/* Logo cluster: entrance (variant) wraps an independent idle float. */}
-            <motion.div variants={childVariants}>
-              <motion.div
-                className="relative h-20 w-20 md:h-24 md:w-24"
-                animate={r ? undefined : { y: [0, -8, 0] }}
-                transition={floatTransition}
-              >
-                {/* Rotating conic ring, masked to a thin ring. */}
-                <motion.div
-                  aria-hidden="true"
-                  className="absolute -inset-2 rounded-full"
-                  style={{
-                    background:
-                      "conic-gradient(from 0deg, transparent 0deg, #4F46E5 110deg, #7C3AED 200deg, #06B6D4 300deg, transparent 360deg)",
-                    WebkitMask:
-                      "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
-                    mask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
-                  }}
-                  animate={r ? undefined : { rotate: 360 }}
-                  transition={
-                    r ? undefined : { duration: 1.4, repeat: Infinity, ease: "linear" }
-                  }
-                />
-                {/* Servio logo mark (matches the Navbar). */}
-                <div className="absolute inset-[6px] flex items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/30">
-                  <span className="text-3xl font-bold text-white md:text-4xl">S</span>
-                </div>
-              </motion.div>
-            </motion.div>
+      {/* Film grain — static texture for a tactile, cinematic finish. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.12] mix-blend-soft-light"
+        style={{ backgroundImage: GRAIN_URL }}
+      />
 
-            <motion.span
-              variants={childVariants}
-              className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-3xl font-bold text-transparent md:text-4xl"
-            >
-              Servio
-            </motion.span>
-
-            <motion.p
-              variants={childVariants}
-              className="-mt-2 text-sm text-slate-400 md:text-base"
-            >
-              Crafting your premium web experience
-            </motion.p>
-
-            {/* Progress bar — composited scaleX fill, no text inside. */}
-            <motion.div
-              variants={childVariants}
-              role="progressbar"
-              aria-label="Loading progress"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress}
-              className="h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-white/10 md:max-w-[260px]"
-            >
-              <motion.div
-                className="h-full origin-left rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400"
-                style={{ transformOrigin: "left" }}
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: fillScale }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              />
-            </motion.div>
-
-            {/* Dynamic status — announced on phase change (not per-percent). */}
-            <motion.div
-              variants={childVariants}
-              role="status"
-              aria-live="polite"
-              aria-atomic="true"
-              className="flex h-5 items-center justify-center"
-            >
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={phase}
-                  initial={{ opacity: 0, y: r ? 0 : 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: r ? 0 : -4 }}
-                  transition={{ duration: r ? 0.15 : 0.25 }}
-                  className="text-sm text-slate-300"
-                >
-                  {label}
-                </motion.span>
-              </AnimatePresence>
-            </motion.div>
-          </>
+      {/* Compact glass card, framed by a slow rim-light so it reads as a focal
+          jewel floating in the immersive field rather than a large panel. */}
+      <motion.div variants={cardVariants} className="relative z-10 w-full max-w-[18rem]">
+        {/* Rotating rim-light — color swept around the card's perimeter only. A
+            radial mask punches out the center (the rotationally-symmetric mask is
+            unaffected by the spin) so the conic light reads as an edge halo and
+            never bleeds saturated color behind the wordmark/tagline. Motion-only. */}
+        {!r && (
+          <motion.div
+            aria-hidden="true"
+            className="absolute -inset-1 rounded-[1.7rem] opacity-50 blur-md"
+            style={{
+              background:
+                "conic-gradient(from 0deg, transparent 0deg, rgba(99,102,241,0.8) 90deg, transparent 180deg, rgba(34,211,238,0.7) 270deg, transparent 360deg)",
+              WebkitMask:
+                "radial-gradient(farthest-side, transparent 52%, #000 86%)",
+              mask: "radial-gradient(farthest-side, transparent 52%, #000 86%)",
+            }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+          />
         )}
+
+        <div className="relative flex flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.06] px-6 py-7 text-center shadow-2xl shadow-black/40 backdrop-blur-xl md:gap-5 md:px-7 md:py-8">
+          {/* Premium top sheen along the card's upper edge. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+          />
+
+          {isError ? (
+            <>
+              <div
+                aria-hidden="true"
+                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-2xl"
+              >
+                ⚠️
+              </div>
+              <h2
+                id="splash-error-title"
+                className="text-lg font-bold text-white md:text-xl"
+              >
+                {label}
+              </h2>
+              <p id="splash-error-desc" className="text-xs text-slate-400 md:text-sm">
+                Please check your connection and try again.
+              </p>
+              <button
+                ref={retryButtonRef}
+                type="button"
+                onClick={onRetry}
+                className="mt-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-500/25 transition-all hover:shadow-indigo-500/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+              >
+                Retry
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Logo cluster: entrance (variant) wraps an independent idle float. */}
+              <motion.div variants={childVariants}>
+                <motion.div
+                  className="relative h-16 w-16 md:h-20 md:w-20"
+                  animate={r ? undefined : { y: [0, -8, 0] }}
+                  transition={floatTransition}
+                >
+                  {/* Rotating conic ring, masked to a thin ring. */}
+                  <motion.div
+                    aria-hidden="true"
+                    className="absolute -inset-2 rounded-full"
+                    style={{
+                      background:
+                        "conic-gradient(from 0deg, transparent 0deg, #4F46E5 110deg, #7C3AED 200deg, #06B6D4 300deg, transparent 360deg)",
+                      WebkitMask:
+                        "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
+                      mask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
+                    }}
+                    animate={r ? undefined : { rotate: 360 }}
+                    transition={
+                      r ? undefined : { duration: 1.4, repeat: Infinity, ease: "linear" }
+                    }
+                  />
+                  {/* Servio logo mark (matches the Navbar). */}
+                  <div className="absolute inset-[6px] flex items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/30">
+                    <span className="text-2xl font-bold text-white md:text-3xl">S</span>
+                  </div>
+                </motion.div>
+              </motion.div>
+
+              <motion.span
+                variants={childVariants}
+                className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-2xl font-bold text-transparent md:text-3xl"
+              >
+                Servio
+              </motion.span>
+
+              <motion.p
+                variants={childVariants}
+                className="-mt-1 text-xs text-slate-400 md:text-sm"
+              >
+                Crafting your premium web experience
+              </motion.p>
+
+              {/* Progress bar — composited scaleX fill, no text inside. */}
+              <motion.div
+                variants={childVariants}
+                role="progressbar"
+                aria-label="Loading progress"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress}
+                className="h-1 w-full max-w-[170px] overflow-hidden rounded-full bg-white/10 md:max-w-[200px]"
+              >
+                <motion.div
+                  className="h-full origin-left rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400"
+                  style={{ transformOrigin: "left" }}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: fillScale }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                />
+              </motion.div>
+
+              {/* Dynamic status — announced on phase change (not per-percent). */}
+              <motion.div
+                variants={childVariants}
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="flex h-5 items-center justify-center"
+              >
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={phase}
+                    initial={{ opacity: 0, y: r ? 0 : 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: r ? 0 : -4 }}
+                    transition={{ duration: r ? 0.15 : 0.25 }}
+                    className="text-xs text-slate-300 md:text-sm"
+                  >
+                    {label}
+                  </motion.span>
+                </AnimatePresence>
+              </motion.div>
+            </>
+          )}
+        </div>
       </motion.div>
     </motion.div>
   );

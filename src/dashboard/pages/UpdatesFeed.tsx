@@ -1,18 +1,15 @@
+import { useState } from "react";
 import { motion } from "motion/react";
-import {
-  Sparkles,
-  Bug,
-  Flag,
-  Info,
-  Bell,
-} from "lucide-react";
+import { Sparkles, Bug, Flag, Info, Bell, AlertCircle, MailCheck } from "lucide-react";
+import { sendEmailVerification } from "firebase/auth";
+import { auth } from "../../Firebase/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "../../app/components/ui/card";
 import { Badge } from "../../app/components/ui/badge";
 import { Skeleton } from "../../app/components/ui/skeleton";
-import { useProjects } from "../hooks/useProjects";
-import type { ProjectUpdate } from "../types";
+import { useClientUpdates } from "../hooks/useClientUpdates";
+import type { UpdateType } from "../lib/updates";
 
-function updateTypeConfig(type: ProjectUpdate["type"]) {
+function updateTypeConfig(type: UpdateType) {
   switch (type) {
     case "feature":
       return {
@@ -53,28 +50,33 @@ function updateTypeConfig(type: ProjectUpdate["type"]) {
   }
 }
 
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
+
+function formatUpdateDate(date: Date | null): string {
+  return date ? dateFormatter.format(date) : "Just now";
+}
+
 export function UpdatesFeed() {
-  const { projects, loading } = useProjects();
+  const { updates, loading, error, needsEmailVerification } = useClientUpdates();
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-56" />
-        <div className="space-y-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-      </div>
-    );
+  async function handleResendVerification() {
+    if (!auth.currentUser) return;
+    setResending(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setResent(true);
+    } catch {
+      /* allow the user to try again */
+    } finally {
+      setResending(false);
+    }
   }
-
-  const project = projects[0];
-  if (!project) return null;
-
-  const updates = [...project.updates].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
 
   return (
     <div className="space-y-6">
@@ -87,16 +89,62 @@ export function UpdatesFeed() {
           Development Updates
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Latest updates for{" "}
-          <span className="font-medium">{project.name}</span>
+          The latest progress, features, and milestones posted by your team.
         </p>
       </motion.div>
 
-      {updates.length === 0 ? (
+      {loading ? (
+        <div className="space-y-4" aria-busy="true" aria-label="Loading updates">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+      ) : error ? (
+        <div
+          role="alert"
+          className="flex flex-col items-center py-16 text-center"
+        >
+          <AlertCircle className="h-12 w-12 text-red-300 dark:text-red-500/70 mb-4" />
+          <p className="text-gray-700 dark:text-gray-200 font-medium">
+            We couldn&apos;t load your updates
+          </p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Please check your connection and try again in a moment.
+          </p>
+        </div>
+      ) : needsEmailVerification ? (
+        <div className="flex flex-col items-center py-16 text-center">
+          <MailCheck className="h-12 w-12 text-indigo-300 dark:text-indigo-500/70 mb-4" />
+          <p className="text-gray-700 dark:text-gray-200 font-medium">
+            Verify your email to see updates
+          </p>
+          <p className="mt-1 max-w-sm text-sm text-gray-500 dark:text-gray-400">
+            Updates are tied to your verified email. Check your inbox for the
+            verification link, then refresh this page.
+          </p>
+          {resent ? (
+            <p className="mt-4 text-sm text-emerald-600 dark:text-emerald-400">
+              Verification email sent — check your inbox.
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resending}
+              className="mt-4 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:opacity-60"
+            >
+              {resending ? "Sending…" : "Resend verification email"}
+            </button>
+          )}
+        </div>
+      ) : updates.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-center">
           <Bell className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">
-            No updates yet. Check back soon!
+          <p className="text-gray-700 dark:text-gray-200 font-medium">
+            No updates yet
+          </p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            When your team posts progress on your project, it&apos;ll show up here.
           </p>
         </div>
       ) : (
@@ -110,7 +158,7 @@ export function UpdatesFeed() {
                 key={update.id}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: idx * 0.06 }}
+                transition={{ duration: 0.3, delay: Math.min(idx, 8) * 0.06 }}
               >
                 <Card className="border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                   <CardHeader className="pb-2">
@@ -123,17 +171,15 @@ export function UpdatesFeed() {
                           {update.title}
                         </CardTitle>
                       </div>
-                      <Badge className={config.badgeClass}>
-                        {config.label}
-                      </Badge>
+                      <Badge className={config.badgeClass}>{config.label}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 whitespace-pre-line">
                       {update.description}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500">
-                      {update.date}
+                      {formatUpdateDate(update.createdAt)}
                     </p>
                   </CardContent>
                 </Card>
