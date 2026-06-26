@@ -154,7 +154,7 @@ export default async function handler(
       ],
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 8192,
         responseMimeType: "application/json",
       },
     });
@@ -166,7 +166,20 @@ export default async function handler(
 
     let parsed;
     try {
-      parsed = JSON.parse(responseText);
+      // 1. Strip markdown
+      let cleanText = responseText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+      
+      // 2. Extract just the JSON object if there's conversational text around it
+      const match = cleanText.match(/\{[\s\S]*\}/);
+      if (match) cleanText = match[0];
+
+      // 3. Remove all literal newlines to prevent "unterminated string" errors
+      cleanText = cleanText.replace(/[\r\n]+/g, ' ');
+      
+      // 4. Remove trailing commas
+      cleanText = cleanText.replace(/,\s*([\]}])/g, '$1');
+      
+      parsed = JSON.parse(cleanText);
     } catch (parseError) {
       console.error("Failed to parse Gemini response. Raw response was:");
       console.error(responseText);
