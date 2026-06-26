@@ -2,9 +2,6 @@ import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { ExternalLink } from 'lucide-react';
 
-const portfolioImage5 = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080&auto=format";
-const portfolioImage6 = "https://images.unsplash.com/photo-1558655146-9f40138edfeb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080&auto=format";
-
 const projects = [
   {
     id: 1,
@@ -42,27 +39,9 @@ const projects = [
     tech: ['React', 'Node.js', 'NoSQL'],
     url: '',
   },
-  {
-    id: 5,
-    title: 'Local Restaurant',
-    category: 'Business',
-    industry: 'Food & Beverage',
-    image: portfolioImage5,
-    tech: ['WordPress', 'WooCommerce'],
-    url: '',
-  },
-  {
-    id: 6,
-    title: 'Designer Showcase',
-    category: 'Portfolio',
-    industry: 'Creative',
-    image: portfolioImage6,
-    tech: ['Webflow', 'Custom CSS'],
-    url: '',
-  },
 ];
 
-const categories = ['All', 'Business', 'Portfolio', 'E-Commerce', 'SaaS'];
+const categories = ['All', 'Business', 'E-Commerce', 'SaaS'];
 
 export function Portfolio() {
   const reduce = useReducedMotion();
