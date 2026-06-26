@@ -103,15 +103,15 @@ export function Footer() {
             <ul className="space-y-4">
               <li className="flex items-start gap-3 text-sm">
                 <Mail className="w-4 h-4 mt-0.5 text-indigo-400 flex-shrink-0" />
-                <span>hello@servio.dev</span>
+                <span>servio873@gmail.com</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <Phone className="w-4 h-4 mt-0.5 text-indigo-400 flex-shrink-0" />
-                <span>+1 (555) 123-4567</span>
+                <span>+91 8076 703 146</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <MapPin className="w-4 h-4 mt-0.5 text-indigo-400 flex-shrink-0" />
-                <span>San Francisco, CA, USA</span>
+                <span>India</span>
               </li>
             </ul>
             <div className="mt-6">
