@@ -136,7 +136,7 @@ export function ProjectUpdates() {
         type,
         createdAt: serverTimestamp(),
       });
-      await writeAuditLog({
+      const auditOk = await writeAuditLog({
         actorUid: admin.uid,
         actorEmail: admin.email,
         action: "project_update.create",
@@ -145,7 +145,11 @@ export function ProjectUpdates() {
       });
       resetForm();
       setDialogOpen(false);
-      toast.success("Update posted to the client.");
+      if (auditOk) {
+        toast.success("Update posted to the client.");
+      } else {
+        toast.warning("Update posted, but the audit log couldn't be recorded.");
+      }
     } catch (err) {
       console.error(err);
       toast.error("Couldn't post the update. Please try again.");
@@ -158,7 +162,7 @@ export function ProjectUpdates() {
     if (!admin) return;
     try {
       await deleteDoc(doc(db, COLLECTIONS.projectUpdates, update.id));
-      await writeAuditLog({
+      const auditOk = await writeAuditLog({
         actorUid: admin.uid,
         actorEmail: admin.email,
         action: "project_update.delete",
@@ -166,7 +170,11 @@ export function ProjectUpdates() {
         targetId: update.id,
         metadata: { clientEmail: update.clientEmail, title: update.title },
       });
-      toast.success("Update removed.");
+      if (auditOk) {
+        toast.success("Update removed.");
+      } else {
+        toast.warning("Update removed, but the audit log couldn't be recorded.");
+      }
     } catch (err) {
       console.error(err);
       toast.error("Couldn't remove the update. Please try again.");
