@@ -77,29 +77,45 @@ export const DEFAULT_PRICING: PricingConfig = {
  * number. Costs are clamped to the configured [min, max] band; the max line
  * adds the configured buffer, and an ambiguous scope adds a risk multiplier.
  */
+type Complexity = EstimationResult["overallComplexity"];
+
+/** Coerce any model-provided complexity into the allowed union (unknown → medium). */
+function normalizeComplexity(value: string): Complexity {
+  return value === "low" ||
+    value === "medium" ||
+    value === "high" ||
+    value === "enterprise"
+    ? value
+    : "medium";
+}
+
 export function computeEstimate(
   classification: AIClassification,
   pricing: PricingConfig,
 ): EstimationResult {
   const fallbackBase = 5000;
+  const overallComplexity = normalizeComplexity(classification.overallComplexity);
 
   let totalBaseCost = 0;
   const featureResults = classification.features.map((f) => {
+    // Normalise first so an unknown value (priced as medium) can never leak its
+    // raw string into the typed EstimationResult.
+    const complexity = normalizeComplexity(f.complexity);
     const basePrice = pricing.featurePricing[f.category] ?? fallbackBase;
-    const multiplier = pricing.complexityMultipliers[f.complexity] ?? 1.3;
+    const multiplier = pricing.complexityMultipliers[complexity] ?? 1.3;
     const featureCost = basePrice * multiplier;
     totalBaseCost += featureCost;
 
     const effortLabel =
-      f.complexity === "low"
+      complexity === "low"
         ? "Low"
-        : f.complexity === "enterprise" || f.complexity === "high"
+        : complexity === "enterprise" || complexity === "high"
           ? "High"
           : "Medium";
 
     return {
       name: f.name,
-      complexity: f.complexity as "low" | "medium" | "high" | "enterprise",
+      complexity,
       estimatedEffort: effortLabel,
     };
   });
@@ -123,23 +139,17 @@ export function computeEstimate(
 
   const featureCount = classification.features.length;
   let timeline: string;
-  if (classification.overallComplexity === "low" && featureCount <= 3) {
+  if (overallComplexity === "low" && featureCount <= 3) {
     timeline = "2-3 weeks";
-  } else if (classification.overallComplexity === "low") {
+  } else if (overallComplexity === "low") {
     timeline = "3-5 weeks";
-  } else if (
-    classification.overallComplexity === "medium" &&
-    featureCount <= 5
-  ) {
+  } else if (overallComplexity === "medium" && featureCount <= 5) {
     timeline = "4-6 weeks";
-  } else if (classification.overallComplexity === "medium") {
+  } else if (overallComplexity === "medium") {
     timeline = "6-8 weeks";
-  } else if (
-    classification.overallComplexity === "high" &&
-    featureCount <= 5
-  ) {
+  } else if (overallComplexity === "high" && featureCount <= 5) {
     timeline = "6-10 weeks";
-  } else if (classification.overallComplexity === "high") {
+  } else if (overallComplexity === "high") {
     timeline = "8-12 weeks";
   } else {
     timeline = "12-16 weeks";
@@ -155,7 +165,7 @@ export function computeEstimate(
   );
   if (highComplexCount > 0) {
     explanationParts.push(
-      `${highComplexCount} of these require${highComplexCount === 1 ? "s" : ""} advanced implementation effort, contributing to the overall ${classification.overallComplexity} complexity rating.`,
+      `${highComplexCount} of these require${highComplexCount === 1 ? "s" : ""} advanced implementation effort, contributing to the overall ${overallComplexity} complexity rating.`,
     );
   }
   if (classification.hasSignificantUnknowns) {
@@ -169,8 +179,7 @@ export function computeEstimate(
 
   return {
     projectType: classification.projectType,
-    overallComplexity:
-      classification.overallComplexity as EstimationResult["overallComplexity"],
+    overallComplexity,
     features: featureResults,
     estimatedCostMin: costMin,
     estimatedCostMax: costMax,

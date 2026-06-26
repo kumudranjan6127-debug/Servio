@@ -151,6 +151,23 @@ describe("computeEstimate — effort labels", () => {
   });
 });
 
+describe("computeEstimate — complexity normalization", () => {
+  it("coerces an unknown complexity to 'medium' in the typed result", () => {
+    const result = computeEstimate(
+      classification({
+        overallComplexity: "exotic",
+        features: [feat("authentication", "exotic", "Weird")],
+      }),
+      DEFAULT_PRICING,
+    );
+    // Neither the overall rating nor the per-feature complexity may leak the
+    // raw "exotic" string into the EstimationResult.
+    expect(result.overallComplexity).toBe("medium");
+    expect(result.features[0].complexity).toBe("medium");
+    expect(result.estimatedTimeline).toBe("4-6 weeks"); // medium, 1 feature
+  });
+});
+
 describe("computeEstimate — timeline", () => {
   const cases: [string, number, string][] = [
     ["low", 3, "2-3 weeks"],
