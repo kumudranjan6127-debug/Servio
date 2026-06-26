@@ -8,7 +8,13 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { addDoc, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import {
+  addDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { toast } from "sonner";
 import { db } from "@/Firebase/firebase";
 import { isTyping } from "../lib/keyboard";
@@ -257,6 +263,25 @@ export function ProjectInvoices() {
     }
   }
 
+  async function handleDelete(invoice: ProjectInvoice) {
+    if (!admin) return;
+    try {
+      await deleteDoc(doc(db, COLLECTIONS.projectInvoices, invoice.id));
+      await writeAuditLog({
+        actorUid: admin.uid,
+        actorEmail: admin.email,
+        action: "invoice.delete",
+        targetType: "projectInvoice",
+        targetId: invoice.id,
+        metadata: { clientEmail: invoice.clientEmail, number: invoice.number },
+      });
+      toast.success("Invoice removed.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Couldn't remove the invoice. Please try again.");
+    }
+  }
+
   const draftTotal = items.reduce((sum, d) => {
     const n = Number(d.amount);
     return sum + (Number.isFinite(n) && n > 0 ? n : 0);
@@ -358,14 +383,24 @@ export function ProjectInvoices() {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
                         {canEdit && (
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openEdit(invoice)}
-                            aria-label={`Edit invoice ${invoice.number}`}
-                          >
-                            <Pencil className="h-4 w-4" aria-hidden="true" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => openEdit(invoice)}
+                              aria-label={`Edit invoice ${invoice.number}`}
+                            >
+                              <Pencil className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => void handleDelete(invoice)}
+                              aria-label={`Delete invoice ${invoice.number}`}
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </td>
