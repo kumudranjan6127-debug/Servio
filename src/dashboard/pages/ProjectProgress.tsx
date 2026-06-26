@@ -378,7 +378,7 @@ export function ProjectProgress() {
                     {update.description}
                   </p>
 
-                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                     <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
                     {update.createdAt ? (
                       <span title={dateTimeFormatter.format(update.createdAt)}>
