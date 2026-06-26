@@ -14,7 +14,7 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
   const { currentUser } = useAuth();
-  const { isAdmin } = useAdmin();
+  const { isAdmin, loading: adminLoading } = useAdmin();
   const dashboardPath = isAdmin ? '/admin/dashboard' : '/dashboard';
   const dashboardLabel = isAdmin ? 'Admin Dashboard' : 'Dashboard';
   const location = useLocation();
@@ -113,12 +113,18 @@ export function Navbar() {
             </button>
             {currentUser ? (
               <div className="flex items-center gap-3">
-                <Link
-                  to={dashboardPath}
-                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-300 font-medium text-sm"
-                >
-                  {dashboardLabel}
-                </Link>
+                {adminLoading ? (
+                  <span className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium text-sm opacity-60 cursor-wait">
+                    Dashboard
+                  </span>
+                ) : (
+                  <Link
+                    to={dashboardPath}
+                    className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-300 font-medium text-sm"
+                  >
+                    {dashboardLabel}
+                  </Link>
+                )}
                 <button
                   onClick={handleSignOut}
                   className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
@@ -206,13 +212,19 @@ export function Navbar() {
               </button>
               {currentUser ? (
                 <div className="space-y-2">
-                  <Link
-                    to={dashboardPath}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block w-full text-center px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-300 font-medium"
-                  >
-                    {dashboardLabel}
-                  </Link>
+                  {adminLoading ? (
+                    <span className="block w-full text-center px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium opacity-60 cursor-wait">
+                      Dashboard
+                    </span>
+                  ) : (
+                    <Link
+                      to={dashboardPath}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full text-center px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-300 font-medium"
+                    >
+                      {dashboardLabel}
+                    </Link>
+                  )}
                   <button
                     onClick={handleSignOut}
                     className="w-full px-6 py-2.5 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
