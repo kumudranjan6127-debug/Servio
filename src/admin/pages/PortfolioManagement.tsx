@@ -47,6 +47,7 @@ import {
 } from "../types";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "@/app/components/UnsavedChangesDialog";
+import { CloudinaryUploadWidget } from "../components/CloudinaryUploadWidget";
 
 const inputClasses =
   "block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/40";
@@ -571,19 +572,32 @@ export function PortfolioManagement() {
 
             <div className="space-y-1.5">
               <label htmlFor="pf-image" className="text-sm font-medium text-foreground">
-                Cover image URL
+                Cover image
               </label>
-              <input
-                id="pf-image"
-                type="url"
-                value={imageUrl}
-                onChange={(e) => {
-                  markDirty();
-                  setImageUrl(e.target.value);
-                }}
-                className={inputClasses}
-                placeholder="https://… or /portfolio/cover.png"
-              />
+              <div className="flex gap-2">
+                <input
+                  id="pf-image"
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => {
+                    markDirty();
+                    setImageUrl(e.target.value);
+                  }}
+                  className={cn(inputClasses, "flex-1")}
+                  placeholder="https://… or upload an image ->"
+                />
+                <CloudinaryUploadWidget
+                  onSuccess={(url) => {
+                    markDirty();
+                    setImageUrl(url);
+                  }}
+                />
+              </div>
+              {imageUrl && (
+                <div className="mt-2">
+                  <img src={imageUrl} alt="Cover preview" className="h-24 w-36 rounded-md object-cover ring-1 ring-border" />
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
