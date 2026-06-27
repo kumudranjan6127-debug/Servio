@@ -64,6 +64,11 @@ function parseTechnologies(value: string): string[] {
 function sanitizeImageUrl(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return "";
+  
+  // Reject protocol-relative URLs (e.g. //attacker.tld/x.png).
+  if (trimmed.startsWith("//")) return "";
+
+  // Allow same-origin absolute paths only.
   if (trimmed.startsWith("/")) {
     return trimmed;
   }
