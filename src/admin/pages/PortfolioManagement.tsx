@@ -127,6 +127,7 @@ export function PortfolioManagement() {
   const [industry, setIndustry] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [techInput, setTechInput] = useState("");
   const [projectUrl, setProjectUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
@@ -144,6 +145,7 @@ export function PortfolioManagement() {
     setIndustry("");
     setDescription("");
     setImageUrl("");
+    setPreviewImageUrl("");
     setTechInput("");
     setProjectUrl("");
     setGithubUrl("");
@@ -167,6 +169,7 @@ export function PortfolioManagement() {
     setIndustry(item.industry);
     setDescription(item.description);
     setImageUrl(item.imageUrl);
+    setPreviewImageUrl(item.imageUrl);
     setTechInput(item.technologies.join(", "));
     setProjectUrl(item.projectUrl);
     setGithubUrl(item.githubUrl);
@@ -602,6 +605,7 @@ export function PortfolioManagement() {
                   onChange={(e) => {
                     markDirty();
                     setImageUrl(e.target.value);
+                    setPreviewImageUrl("");
                   }}
                   className={cn(inputClasses, "flex-1")}
                   placeholder="https://… or upload an image ->"
@@ -610,12 +614,13 @@ export function PortfolioManagement() {
                   onSuccess={(url) => {
                     markDirty();
                     setImageUrl(url);
+                    setPreviewImageUrl(url);
                   }}
                 />
               </div>
-              {imageUrl && sanitizeImageUrl(imageUrl) && (
+              {previewImageUrl && sanitizeImageUrl(previewImageUrl) && (
                 <div className="mt-2">
-                  <img src={sanitizeImageUrl(imageUrl)} alt="Cover preview" className="h-24 w-36 rounded-md object-cover ring-1 ring-border" />
+                  <img src={sanitizeImageUrl(previewImageUrl)} alt="Cover preview" className="h-24 w-36 rounded-md object-cover ring-1 ring-border" />
                 </div>
               )}
             </div>

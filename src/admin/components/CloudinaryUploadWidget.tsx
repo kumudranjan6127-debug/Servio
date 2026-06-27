@@ -8,8 +8,13 @@ interface CloudinaryUploadWidgetProps {
 }
 
 export function CloudinaryUploadWidget({ onSuccess, className }: CloudinaryUploadWidgetProps) {
-  const cloudinaryRef = useRef<any>();
-  const widgetRef = useRef<any>();
+  const cloudinaryRef = useRef<{
+    createUploadWidget: (
+      options: Record<string, unknown>,
+      callback: (error: Error | null, result: { event: string; info: { secure_url: string } } | undefined) => void
+    ) => { open: () => void };
+  }>();
+  const widgetRef = useRef<{ open: () => void }>();
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -18,14 +23,14 @@ export function CloudinaryUploadWidget({ onSuccess, className }: CloudinaryUploa
 
     const onScriptLoad = () => {
       setIsLoaded(true);
-      // @ts-ignore
+      // @ts-expect-error window.cloudinary is injected by the external script
       cloudinaryRef.current = window.cloudinary;
       
       const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
       const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-      if (!cloudName || !uploadPreset) {
-        console.error("Cloudinary environment variables are missing.");
+      if (!cloudName || !uploadPreset || !cloudinaryRef.current) {
+        console.error("Cloudinary environment variables or script are missing.");
         return;
       }
 
@@ -37,7 +42,7 @@ export function CloudinaryUploadWidget({ onSuccess, className }: CloudinaryUploa
           multiple: false,
           maxFiles: 1,
         },
-        function (error: any, result: any) {
+        function (error: Error | null, result: { event: string; info: { secure_url: string } } | undefined) {
           if (!error && result && result.event === 'success') {
             onSuccess(result.info.secure_url);
           }
@@ -53,7 +58,7 @@ export function CloudinaryUploadWidget({ onSuccess, className }: CloudinaryUploa
       script.onload = onScriptLoad;
       document.body.appendChild(script);
     } else {
-      if ((window as any).cloudinary) {
+      if ((window as unknown as { cloudinary?: unknown }).cloudinary) {
         onScriptLoad();
       } else {
         existingScript.addEventListener('load', onScriptLoad);
