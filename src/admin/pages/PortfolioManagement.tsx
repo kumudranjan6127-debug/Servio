@@ -47,6 +47,7 @@ import {
 } from "../types";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "@/app/components/UnsavedChangesDialog";
+import { CloudinaryUploadWidget } from "../components/CloudinaryUploadWidget";
 
 const inputClasses =
   "block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/40";
@@ -57,6 +58,26 @@ function parseTechnologies(value: string): string[] {
     .split(/[\n,]/)
     .map((t) => t.trim())
     .filter(Boolean);
+}
+
+/** Allow only safe image URL forms for DOM sinks like <img src>. */
+function sanitizeImageUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  
+  // Reject protocol-relative URLs (e.g. //attacker.tld/x.png).
+  if (trimmed.startsWith("//")) return "";
+
+  // Allow same-origin absolute paths only.
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
 }
 
 function StatusBadge({ published }: { published: boolean }) {
@@ -106,6 +127,7 @@ export function PortfolioManagement() {
   const [industry, setIndustry] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [techInput, setTechInput] = useState("");
   const [projectUrl, setProjectUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
@@ -123,6 +145,7 @@ export function PortfolioManagement() {
     setIndustry("");
     setDescription("");
     setImageUrl("");
+    setPreviewImageUrl("");
     setTechInput("");
     setProjectUrl("");
     setGithubUrl("");
@@ -146,6 +169,7 @@ export function PortfolioManagement() {
     setIndustry(item.industry);
     setDescription(item.description);
     setImageUrl(item.imageUrl);
+    setPreviewImageUrl(item.imageUrl);
     setTechInput(item.technologies.join(", "));
     setProjectUrl(item.projectUrl);
     setGithubUrl(item.githubUrl);
@@ -571,19 +595,34 @@ export function PortfolioManagement() {
 
             <div className="space-y-1.5">
               <label htmlFor="pf-image" className="text-sm font-medium text-foreground">
-                Cover image URL
+                Cover image
               </label>
-              <input
-                id="pf-image"
-                type="url"
-                value={imageUrl}
-                onChange={(e) => {
-                  markDirty();
-                  setImageUrl(e.target.value);
-                }}
-                className={inputClasses}
-                placeholder="https://… or /portfolio/cover.png"
-              />
+              <div className="flex gap-2">
+                <input
+                  id="pf-image"
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => {
+                    markDirty();
+                    setImageUrl(e.target.value);
+                    setPreviewImageUrl("");
+                  }}
+                  className={cn(inputClasses, "flex-1")}
+                  placeholder="https://… or upload an image ->"
+                />
+                <CloudinaryUploadWidget
+                  onSuccess={(url) => {
+                    markDirty();
+                    setImageUrl(url);
+                    setPreviewImageUrl(url);
+                  }}
+                />
+              </div>
+              {previewImageUrl && sanitizeImageUrl(previewImageUrl) && (
+                <div className="mt-2">
+                  <img src={sanitizeImageUrl(previewImageUrl)} alt="Cover preview" className="h-24 w-36 rounded-md object-cover ring-1 ring-border" />
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
