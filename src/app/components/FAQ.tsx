@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     q: "How much does a website cost?",
-    a: "Our projects start at $999 for a landing page. Business websites typically range from $2,499–$4,999, and custom applications from $4,999 upward. Every project is unique, so we provide a free detailed quote after understanding your needs.",
+    a: "Our projects start at ₹7,999 for a landing page. Business websites typically range from ₹65,000–₹1,20,000, and custom applications from ₹1,60,000 upward. Every project is unique, so we provide a free detailed quote after understanding your needs.",
   },
   {
     q: "Do you provide hosting and domain services?",
