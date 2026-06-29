@@ -8,14 +8,20 @@
  * @param id - The `id` attribute of the target section element.
  */
 export function scrollToSection(id: string): void {
+  const element = document.getElementById(id);
+  if (!element) return;
+
+  // Prefer the active Lenis instance so in-page anchors share the site's
+  // inertial scroll; fall back to native (reduced-motion → instant).
+  if (typeof window !== 'undefined' && window.__lenis) {
+    window.__lenis.scrollTo(element);
+    return;
+  }
+
   const prefersReduced =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  const element = document.getElementById(id);
-  if (element) {
-    element.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth' });
-  }
+  element.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth' });
 }
 
 /**
@@ -39,9 +45,13 @@ export function scrollToSectionFromAnyRoute(
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const doScroll = () => {
-    document
-      .getElementById(id)
-      ?.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth' });
+    const element = document.getElementById(id);
+    if (!element) return;
+    if (typeof window !== 'undefined' && window.__lenis) {
+      window.__lenis.scrollTo(element);
+      return;
+    }
+    element.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth' });
   };
 
   if (currentPathname !== '/') {

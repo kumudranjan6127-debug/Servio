@@ -3,6 +3,19 @@ import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useReducedMotion, useInView } from 'motion/react';
 import { services } from '../data/servicesData';
 import { TypingText } from './TypingText';
+import { Jali } from './motifs';
+
+// Per-service accent gradients, re-tinted from the generic ramps in the data
+// layer to the warm material palette (copper · terracotta · peacock · sindoor ·
+// haldi · gold). Tokens — not hex — so each card reads correctly in light AND dark.
+const CARD_ACCENTS: Record<string, string> = {
+  'landing-pages': 'from-[var(--saffron)] to-[var(--haldi)]',
+  'business-websites': 'from-[var(--primary)] to-[var(--secondary)]',
+  'portfolio-websites': 'from-[var(--peacock)] to-[var(--accent)]',
+  'e-commerce-stores': 'from-[var(--sindoor)] to-[var(--terracotta)]',
+  'custom-web-applications': 'from-[var(--primary)] to-[var(--peacock)]',
+  'website-maintenance': 'from-[var(--haldi)] to-[var(--gold)]',
+};
 
 // Fine fractal-noise grain to kill blur banding on the light backdrop. Fully
 // percent-encoded so the data URI survives any bundler / CSS parser.
@@ -25,10 +38,12 @@ function ServiceCard({
   service,
   index,
   reduce,
+  accent,
 }: {
   service: (typeof services)[number];
   index: number;
   reduce: boolean | null;
+  accent: string;
 }) {
   const Icon = service.icon;
 
@@ -41,7 +56,10 @@ function ServiceCard({
   };
 
   return (
-    <Link to={`/services/${service.slug}`} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-3xl">
+    <Link
+      to={`/services/${service.slug}`}
+      className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-3xl"
+    >
     <motion.div
       onMouseMove={onMove}
       initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.96, filter: 'blur(6px)' }}
@@ -49,19 +67,19 @@ function ServiceCard({
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: reduce ? 0 : 0.6, delay: index * 0.1, ease: [0.21, 0.47, 0.32, 0.98] }}
       whileHover={reduce ? undefined : { y: -10 }}
-      className="group relative overflow-hidden rounded-3xl p-8 cursor-pointer bg-white/55 dark:bg-slate-900/55 hover:bg-white/[0.65] dark:hover:bg-slate-800/[0.65] backdrop-blur-2xl backdrop-saturate-150 border border-white/60 dark:border-slate-700/60 shadow-[0_8px_32px_-8px_rgba(79,70,229,0.25),inset_0_1px_0_0_rgba(255,255,255,0.9)] dark:shadow-[0_8px_32px_-8px_rgba(79,70,229,0.15),inset_0_1px_0_0_rgba(255,255,255,0.1)] hover:shadow-[0_24px_60px_-12px_rgba(124,58,237,0.45)] dark:hover:shadow-[0_24px_60px_-12px_rgba(124,58,237,0.3)] transition-[background-color,box-shadow] duration-300"
+      className="group relative overflow-hidden rounded-3xl p-8 cursor-pointer bg-card/55 hover:bg-card/70 backdrop-blur-2xl backdrop-saturate-150 border border-border/60 shadow-elev-2 hover:shadow-elev-4 transition-[background-color,box-shadow] duration-300"
     >
       {/* Accent glaze — each card refracts its own hue */}
       <div
         aria-hidden
-        className={`pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br ${service.color} opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-500`}
+        className={`pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br ${accent} opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-500`}
       />
 
       {/* Masked 1px gradient rim */}
       <div
         aria-hidden
         style={ringStyle}
-        className="pointer-events-none absolute inset-0 rounded-3xl p-px bg-gradient-to-br from-white/80 via-white/20 to-indigo-200/50 dark:from-white/20 dark:via-slate-400/10 dark:to-indigo-300/20"
+        className="pointer-events-none absolute inset-0 rounded-3xl p-px bg-gradient-to-br from-white/80 via-white/20 to-[var(--copper)]/40 dark:from-white/20 dark:via-white/10 dark:to-[var(--copper)]/25"
       />
 
       {/* Cursor-following radial spotlight */}
@@ -69,7 +87,7 @@ function ServiceCard({
         aria-hidden
         style={{
           background:
-            'radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), rgba(124,58,237,0.18), transparent 60%)',
+            'radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklch, var(--copper) 22%, transparent), transparent 60%)',
         }}
         className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
       />
@@ -85,7 +103,7 @@ function ServiceCard({
       {/* Editorial index badge */}
       <span
         aria-hidden
-        className="absolute top-5 right-6 text-xs font-semibold tracking-widest text-indigo-400/70 dark:text-indigo-300/70 select-none"
+        className="absolute top-5 right-6 text-xs font-semibold tracking-widest text-primary/70 nums-tabular select-none"
       >
         0{index + 1}
       </span>
@@ -95,10 +113,10 @@ function ServiceCard({
         <div className="relative mb-6 w-14 h-14">
           <div
             aria-hidden
-            className={`absolute -inset-2 rounded-2xl bg-gradient-to-br ${service.color} opacity-40 blur-xl group-hover:opacity-70 transition-opacity duration-500`}
+            className={`absolute -inset-2 rounded-2xl bg-gradient-to-br ${accent} opacity-40 blur-xl group-hover:opacity-70 transition-opacity duration-500`}
           />
           <div
-            className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${service.color} ring-1 ring-white/40 dark:ring-white/20 shadow-lg flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 will-change-transform`}
+            className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${accent} ring-1 ring-white/40 dark:ring-white/20 shadow-lg flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 will-change-transform`}
           >
             <span
               aria-hidden
@@ -108,10 +126,12 @@ function ServiceCard({
           </div>
         </div>
 
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">{service.title}</h3>
-        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{service.description}</p>
+        <h3 className="font-bold text-foreground mb-3 text-xl">
+          {service.title}
+        </h3>
+        <p className="text-muted-foreground leading-relaxed">{service.description}</p>
 
-        <div className="mt-6 flex items-center font-semibold text-indigo-600 dark:text-indigo-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+        <div className="mt-6 flex items-center font-semibold text-primary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
           <span className="text-sm">Learn more</span>
           <svg
             className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
@@ -141,12 +161,21 @@ export function Services() {
     <section
       ref={ref}
       id="services"
-      className="relative isolate overflow-hidden py-20 md:py-32 bg-white dark:bg-slate-950"
+      className="relative isolate overflow-hidden py-20 md:py-32 bg-background"
     >
       {/* Base wash — gives the frost something colored to refract, fades into neighbors */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white via-indigo-50/40 to-white dark:from-slate-950 dark:via-indigo-950/20 dark:to-slate-950"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-[var(--terracotta)]/5 to-background"
+      />
+
+      {/* Jali substrate — a faint pierced lattice the frost refracts. Sits above
+          the wash but behind the cards (z-0 < content z-10), so the glass picks
+          up a culturally distinctive screen instead of a flat colour field. */}
+      <Jali
+        className="absolute inset-0 z-0"
+        color="var(--peacock)"
+        opacity={0.06}
       />
 
       {/* Aurora parallax wrapper — a single transform drives all three blobs */}
@@ -156,17 +185,17 @@ export function Services() {
         className="pointer-events-none absolute inset-0 -z-10 will-change-transform"
       >
         <motion.div
-          className="absolute -top-32 -left-24 w-[640px] h-[640px] rounded-full bg-gradient-to-br from-indigo-400/40 to-purple-400/30 dark:from-indigo-500/20 dark:to-purple-500/15 blur-3xl"
+          className="absolute -top-32 -left-24 w-[640px] h-[640px] rounded-full bg-gradient-to-br from-[var(--copper)]/30 to-[var(--terracotta)]/20 blur-3xl"
           animate={reduce || !isInView ? undefined : { x: [0, 40, -20, 0], y: [0, -30, 20, 0], scale: [1, 1.08, 0.96, 1] }}
           transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute top-1/3 right-[-120px] w-[560px] h-[560px] rounded-full bg-gradient-to-br from-purple-400/35 to-fuchsia-300/25 dark:from-purple-500/15 dark:to-fuchsia-400/10 blur-3xl"
+          className="absolute top-1/3 right-[-120px] w-[560px] h-[560px] rounded-full bg-gradient-to-br from-[var(--terracotta)]/25 to-[var(--peacock)]/15 blur-3xl"
           animate={reduce || !isInView ? undefined : { x: [0, -50, 30, 0], y: [0, 25, -15, 0], scale: [1, 1.06, 0.97, 1] }}
           transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute bottom-[-160px] left-1/3 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-cyan-400/35 to-teal-300/25 dark:from-cyan-500/15 dark:to-teal-400/10 blur-3xl"
+          className="absolute bottom-[-160px] left-1/3 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[var(--peacock)]/25 to-[var(--copper)]/15 blur-3xl"
           animate={reduce || !isInView ? undefined : { x: [0, 30, -40, 0], y: [0, -20, 30, 0], scale: [1, 1.07, 0.95, 1] }}
           transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }}
         />
@@ -183,25 +212,20 @@ export function Services() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-sm uppercase tracking-wider">
+          <span className="eyebrow text-primary">
             Our Services
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mt-3 mb-4">
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mt-3 mb-4">
             Everything You Need to{' '}
             <motion.span
-              className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage:
-                  'linear-gradient(110deg,#4F46E5,#7C3AED,#06B6D4,#7C3AED,#4F46E5)',
-                backgroundSize: '200% auto',
-              }}
+              className="text-gradient-brand"
               animate={reduce || !isInView ? undefined : { backgroundPositionX: ['0%', '200%'] }}
               transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
             >
-              <TypingText text="Succeed Online" delay={200} cursorColor="bg-indigo-500" />
+              <TypingText text="Succeed Online" delay={200} cursorColor="bg-primary" />
             </motion.span>
           </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             From landing pages to complex web applications, we deliver solutions that drive results.
           </p>
 
@@ -209,13 +233,21 @@ export function Services() {
           <motion.div
             aria-hidden
             style={{ scaleX: reduce ? 1 : lineScale }}
-            className="mx-auto mt-5 h-[3px] w-40 origin-left rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500"
+            className="mx-auto mt-5 h-[3px] w-40 origin-left rounded-full bg-grad-brand"
           />
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Even grid — 2 rows of 3 (lg) / 3 rows of 2 (md), equal visual weight,
+            items-stretch so every card matches its row's height. Nothing overflows. */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
           {services.map((service, index) => (
-            <ServiceCard key={service.title} service={service} index={index} reduce={reduce} />
+            <ServiceCard
+              key={service.title}
+              service={service}
+              index={index}
+              reduce={reduce}
+              accent={CARD_ACCENTS[service.slug] ?? service.color}
+            />
           ))}
         </div>
       </div>

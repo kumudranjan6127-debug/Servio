@@ -2,11 +2,6 @@
 // presentational component import from here so timings, the phase machine, and
 // the preloaded hero URL can never drift apart.
 
-// MUST byte-match the preload <link> in index.html and the heroImage in
-// Hero.tsx — a mismatched query string triggers a second download.
-export const HERO_IMAGE_URL =
-  "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB3ZWJzaXRlJTIwZGFzaGJvYXJkJTIwZGVzaWdufGVufDF8fHx8MTc4MTcwMjY1OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
-
 /** Minimum time the splash stays up so the premium entrance is actually seen. */
 export const MIN_DISPLAY_MS = 1600;
 /** Shorter floor when the user prefers reduced motion. */

@@ -1,5 +1,5 @@
-import { lazy as reactLazy, Suspense, useEffect, useLayoutEffect, useRef } from "react";
-import { Route, useLocation, createBrowserRouter, RouterProvider, createRoutesFromElements, Outlet } from "react-router-dom";
+import { lazy as reactLazy, Suspense, useLayoutEffect, useRef } from "react";
+import { Route, createBrowserRouter, RouterProvider, createRoutesFromElements } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 
@@ -27,7 +27,11 @@ function lazy<T extends React.ComponentType<unknown>>(
 }
 import { SEO } from "./components/SEO";
 import { SITE_URL } from "./lib/siteConfig";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useSmoothScroll } from "./providers/useSmoothScroll";
+import { AnimatedOutlet } from "./components/motion/AnimatedOutlet";
+import { LiquidGlassFilter } from "./components/LiquidGlassFilter";
+import { useReducedData } from "./hooks/useMediaPreference";
 import { Navbar } from "./components/Navbar";
 import { Hero } from "./components/Hero";
 import { TrustedBy } from "./components/TrustedBy";
@@ -41,6 +45,8 @@ import { QuoteForm } from "./components/QuoteForm";
 import { FAQ } from "./components/FAQ";
 import { FinalCTA } from "./components/FinalCTA";
 import { Footer } from "./components/Footer";
+import { SectionFrame } from "./components/SectionFrame";
+import { TempleDivider } from "./components/TempleDivider";
 import NotFound from "./components/NotFound";
 import { ThemeProvider } from "./hooks/useTheme";
 import { SplashScreen } from "./components/SplashScreen";
@@ -83,12 +89,6 @@ function PageSpinner() {
   );
 }
 
-function ScrollToTop() {
-  const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
-  return null;
-}
-
 const HOME_JSON_LD = [
   {
     "@context": "https://schema.org",
@@ -129,17 +129,25 @@ function LandingPage() {
       </a>
       <Navbar />
       <main id="main-content" tabIndex={-1}>
-        <Hero />
-        <TrustedBy />
-        <Services />
-        <Process />
-        <Portfolio />
-        <Pricing />
-        <WhyChoose />
-        <Testimonials />
-        <QuoteForm />
-        <FAQ />
-        <FinalCTA />
+        {/* Every section is framed like a carved temple panel (corner brackets +
+            engraved rails) and separated by lotus dividers — handcrafted rhythm,
+            not stacked rectangles. Frames are pointer-events-none overlays. */}
+        <SectionFrame rails={false}><Hero /></SectionFrame>
+        <SectionFrame rails={false}><TrustedBy /></SectionFrame>
+        <TempleDivider />
+        <SectionFrame><Services /></SectionFrame>
+        <SectionFrame><Process /></SectionFrame>
+        <TempleDivider />
+        <SectionFrame><Portfolio /></SectionFrame>
+        <SectionFrame><Pricing /></SectionFrame>
+        <TempleDivider />
+        <SectionFrame><WhyChoose /></SectionFrame>
+        <SectionFrame><Testimonials /></SectionFrame>
+        <TempleDivider />
+        <SectionFrame><QuoteForm /></SectionFrame>
+        <SectionFrame><FAQ /></SectionFrame>
+        <TempleDivider />
+        <SectionFrame><FinalCTA /></SectionFrame>
       </main>
       <Footer />
     </>
@@ -213,13 +221,20 @@ function LandingShell() {
 }
 
 function RootLayout() {
+  // Inertial smooth scroll (Lenis) site-wide, except for users who opt out of
+  // motion or are on a data saver — they get native scrolling. Lenis is bridged
+  // to GSAP ScrollTrigger inside the hook so scrubbed timelines stay in sync.
+  const reduceMotion = useReducedMotion();
+  const reduceData = useReducedData();
+  useSmoothScroll(!reduceMotion && !reduceData);
+
   return (
     <ThemeProvider>
-      <ScrollToTop />
+      <LiquidGlassFilter />
       <AuthProvider>
         <AdminProvider>
           <Suspense fallback={<PageSpinner />}>
-            <Outlet />
+            <AnimatedOutlet />
           </Suspense>
         </AdminProvider>
       </AuthProvider>

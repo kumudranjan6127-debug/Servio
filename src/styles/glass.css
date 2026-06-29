@@ -1,0 +1,107 @@
+/* ════════════════════════════════════════════════════════════════════════
+   Liquid Glass — the single material every glass surface uses.
+
+   Six ingredients: blur + saturate + brightness · inner sheen · zari rim-light
+   · content-aware tint · contrast scrim · (per-surface refraction, opt-in).
+   Ships a full fallback ladder for performance, a11y, and unsupported engines.
+
+   The material lives in @layer components so Tailwind utilities (e.g.
+   `rounded-2xl`, `rounded-full`, later in @layer utilities) override its
+   defaults as expected. The fallback blocks below stay UNLAYERED so they win.
+   ════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  .glass {
+    position: relative;
+    isolation: isolate;
+    border-radius: var(--radius);
+    color: var(--glass-fg);
+    background: color-mix(in oklch, var(--glass-tint) 8%, var(--glass-bg));
+    box-shadow:
+      inset 0 1px 0 var(--glass-sheen),
+      inset 0 0 0 1px rgb(255 255 255 / 0.08),
+      var(--glass-shadow);
+  }
+
+  @supports ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+    .glass {
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(1.04);
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(1.04);
+    }
+  }
+
+  /* Tiers — escalate only where earned; never grid-repeat .glass-thick. */
+  .glass-thin { --glass-blur: 8px; }
+  .glass-strong { background: color-mix(in oklch, var(--glass-tint) 8%, var(--glass-bg-strong)); }
+  .glass-thick { --glass-blur: 28px; }
+
+  /* (3) Zari rim-light — masked 1px gradient: bright top-left → gold bottom-right. */
+  .glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      var(--glass-rim),
+      transparent 42%,
+      color-mix(in oklch, var(--gold) 40%, transparent)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+  }
+
+  /* (5) Contrast-floor scrim behind content so text stays AA over busy backdrops. */
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: -1;
+    background: var(--glass-scrim);
+  }
+
+  /* Refraction (the "liquid" tell) — opt-in on 1–2 hero surfaces only.
+     Chromium honours backdrop-filter: url(#…); Safari/Firefox silently keep the
+     plain blur above, which is the correct graceful fallback. */
+  @supports (backdrop-filter: url(#liquid-glass)) {
+    .glass[data-refract="true"] {
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) url(#liquid-glass);
+    }
+  }
+
+  /* Jali: the glass becomes a pierced lattice (blur shows only through holes). */
+  .jali-mask {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cpath d='M22 3 41 22 22 41 3 22Z' fill='black'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cpath d='M22 3 41 22 22 41 3 22Z' fill='black'/%3E%3C/svg%3E");
+    -webkit-mask-size: 44px 44px;
+            mask-size: 44px 44px;
+  }
+}
+
+/* ════════════════════════════ Fallback ladder ══════════════════════════════
+   Unlayered (and/or !important) so they override the layered material above. */
+
+/* Mobile GPUs: cheaper blur + saturation. */
+@media (max-width: 767px) {
+  :root { --glass-blur: 8px; --glass-saturate: 140%; }
+}
+
+/* No backdrop-filter at all → near-opaque surface. */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .glass { background: var(--glass-bg-strong); }
+}
+
+/* Reduced transparency / data-saver → solid card, no blur (mirrors reduced-motion rigor). */
+@media (prefers-reduced-transparency: reduce), (prefers-reduced-data: reduce) {
+  .glass {
+    background: var(--card) !important;
+    -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+  }
+}

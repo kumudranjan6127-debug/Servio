@@ -71,6 +71,21 @@ export default defineConfig({
             if (id.includes('/motion/') || id.includes('/framer-motion/')) {
               return 'vendor-motion';
             }
+            if (id.includes('/gsap/')) {
+              return 'vendor-gsap';
+            }
+            if (id.includes('/lenis/')) {
+              return 'vendor-lenis';
+            }
+            if (id.includes('/three/') || id.includes('/@react-three/')) {
+              return 'vendor-three';
+            }
+            if (id.includes('/@mui/') || id.includes('/@emotion/')) {
+              return 'vendor-mui';
+            }
+            if (id.includes('/recharts/') || id.includes('/d3-')) {
+              return 'vendor-charts';
+            }
           }
         },
       },
