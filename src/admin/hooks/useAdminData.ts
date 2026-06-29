@@ -18,10 +18,14 @@ import {
   parseAuditLog,
   parseClient,
   parseMessage,
+  parsePortfolioItem,
   parseProject,
   parseProjectBilling,
+  parseProjectInvoice,
   parseProjectUpdate,
+  portfolioCollection,
   projectBillingCollection,
+  projectInvoicesCollection,
   projectsCollection,
   projectUpdatesCollection,
 } from "../lib/collections";
@@ -31,8 +35,10 @@ import {
   Client,
   ContactMessage,
   MessageStatus,
+  PortfolioItem,
   Project,
   ProjectBilling,
+  ProjectInvoice,
   ProjectUpdate,
 } from "../types";
 import {
@@ -70,6 +76,14 @@ function byClientEmail(
   b: { clientEmail: string },
 ): number {
   return a.clientEmail.localeCompare(b.clientEmail);
+}
+
+function byOrder(
+  a: { order: number; createdAt?: Timestamp },
+  b: { order: number; createdAt?: Timestamp },
+): number {
+  if (a.order !== b.order) return a.order - b.order;
+  return millis(a.createdAt) - millis(b.createdAt);
 }
 
 /**
@@ -159,6 +173,21 @@ export function useProjectBilling(): CollectionState<ProjectBilling> {
     parseProjectBilling,
     byClientEmail,
   );
+}
+
+export function useProjectInvoices(): CollectionState<ProjectInvoice> {
+  // Newest first. No dev-mock dataset — local preview shows an empty list.
+  return useCollectionData(
+    projectInvoicesCollection,
+    parseProjectInvoice,
+    byCreatedDesc,
+  );
+}
+
+export function usePortfolio(): CollectionState<PortfolioItem> {
+  // Sorted by display order (then oldest-first) to match the public page. No
+  // dev-mock dataset — in local preview this simply shows an empty list.
+  return useCollectionData(portfolioCollection, parsePortfolioItem, byOrder);
 }
 
 export function useClients(enabled = true): CollectionState<Client> {

@@ -6,10 +6,16 @@ import {
   AuditLogEntry,
   Client,
   ContactMessage,
+  InvoiceLineItem,
+  InvoiceStatus,
   MessageStatus,
   PaymentStatus,
+  PortfolioCategory,
+  PortfolioItem,
+  PORTFOLIO_CATEGORIES,
   Project,
   ProjectBilling,
+  ProjectInvoice,
   ProjectPayment,
   ProjectStatus,
   ProjectUpdate,
@@ -22,6 +28,8 @@ export const COLLECTIONS = {
   projects: "projects",
   projectUpdates: "projectUpdates",
   projectBilling: "projectBilling",
+  projectInvoices: "projectInvoices",
+  portfolio: "portfolio",
   clients: "clients",
   messages: "messages",
   auditLogs: "audit_logs",
@@ -37,6 +45,11 @@ export const projectBillingCollection = collection(
   db,
   COLLECTIONS.projectBilling,
 );
+export const projectInvoicesCollection = collection(
+  db,
+  COLLECTIONS.projectInvoices,
+);
+export const portfolioCollection = collection(db, COLLECTIONS.portfolio);
 export const clientsCollection = collection(db, COLLECTIONS.clients);
 export const messagesCollection = collection(db, COLLECTIONS.messages);
 export const auditLogsCollection = collection(db, COLLECTIONS.auditLogs);
@@ -65,6 +78,7 @@ const PAYMENT_STATUSES: readonly PaymentStatus[] = [
   "pending",
   "failed",
 ];
+const INVOICE_STATUSES: readonly InvoiceStatus[] = ["paid", "unpaid", "overdue"];
 
 function str(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
@@ -181,6 +195,67 @@ export function parseProjectBilling(
     clientEmail: str(data.clientEmail),
     totalCost: num(data.totalCost),
     payments,
+    createdAt: ts(data.createdAt),
+    updatedAt: ts(data.updatedAt),
+  };
+}
+
+function parseInvoiceLineItem(raw: unknown): InvoiceLineItem | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as DocumentData;
+  if (typeof data.amount !== "number" || !Number.isFinite(data.amount)) {
+    return null;
+  }
+  return { description: str(data.description), amount: data.amount };
+}
+
+export function parseProjectInvoice(
+  id: string,
+  data: DocumentData,
+): ProjectInvoice {
+  const status = INVOICE_STATUSES.includes(data.status as InvoiceStatus)
+    ? (data.status as InvoiceStatus)
+    : "unpaid";
+  const items = Array.isArray(data.items)
+    ? data.items
+        .map(parseInvoiceLineItem)
+        .filter((i): i is InvoiceLineItem => i !== null)
+    : [];
+  return {
+    id,
+    clientEmail: str(data.clientEmail),
+    number: str(data.number),
+    date: str(data.date),
+    dueDate: str(data.dueDate),
+    status,
+    items,
+    createdAt: ts(data.createdAt),
+    updatedAt: ts(data.updatedAt),
+  };
+}
+
+export function parsePortfolioItem(
+  id: string,
+  data: DocumentData,
+): PortfolioItem {
+  const category = PORTFOLIO_CATEGORIES.includes(data.category as PortfolioCategory)
+    ? (data.category as PortfolioCategory)
+    : "Other";
+  const technologies = Array.isArray(data.technologies)
+    ? data.technologies.filter((t): t is string => typeof t === "string")
+    : [];
+  return {
+    id,
+    title: str(data.title, "Untitled project"),
+    description: str(data.description),
+    category,
+    industry: str(data.industry),
+    imageUrl: str(data.imageUrl),
+    technologies,
+    projectUrl: str(data.projectUrl),
+    githubUrl: str(data.githubUrl),
+    order: num(data.order),
+    published: data.published === true,
     createdAt: ts(data.createdAt),
     updatedAt: ts(data.updatedAt),
   };

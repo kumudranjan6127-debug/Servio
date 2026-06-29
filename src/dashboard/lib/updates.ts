@@ -93,3 +93,33 @@ export function sortByNewest(a: ClientUpdate, b: ClientUpdate): number {
   const bt = b.createdAt ? b.createdAt.getTime() : 0;
   return bt - at;
 }
+
+/** A progress-oriented summary of a client's project updates. */
+export interface UpdatesSummary {
+  /** Total number of updates posted. */
+  total: number;
+  /** How many of them are milestones (key progress markers). */
+  milestones: number;
+  /** Newest update's timestamp, or null when none are dated. */
+  latest: Date | null;
+  /** Oldest update's timestamp ("project journey start"), or null. */
+  started: Date | null;
+}
+
+/**
+ * Derive the headline progress figures the Progress section shows above the
+ * journey timeline. Order-independent, so it works on the raw feed.
+ */
+export function summarizeUpdates(updates: ClientUpdate[]): UpdatesSummary {
+  let milestones = 0;
+  let latest: Date | null = null;
+  let started: Date | null = null;
+  for (const u of updates) {
+    if (u.type === "milestone") milestones++;
+    if (u.createdAt) {
+      if (!latest || u.createdAt > latest) latest = u.createdAt;
+      if (!started || u.createdAt < started) started = u.createdAt;
+    }
+  }
+  return { total: updates.length, milestones, latest, started };
+}

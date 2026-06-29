@@ -104,6 +104,74 @@ export interface ProjectBilling {
   updatedAt?: Timestamp;
 }
 
+/** The settlement state of an invoice. */
+export type InvoiceStatus = "paid" | "unpaid" | "overdue";
+
+/** A single line item embedded in a `projectInvoices` document. */
+export interface InvoiceLineItem {
+  description: string;
+  amount: number;
+}
+
+/**
+ * A document in the `projectInvoices` collection — an invoice an admin issues to
+ * a client, shown on the client dashboard's Invoices section. Addressed by the
+ * client's (lowercased) email, the only identifier shared between the admin and
+ * the client's auth. The client derives the total from `items`; only the items
+ * are stored, never a separate total.
+ */
+export interface ProjectInvoice {
+  id: string;
+  clientEmail: string;
+  number: string;
+  /** ISO calendar date ('YYYY-MM-DD') the invoice was issued. */
+  date: string;
+  /** ISO calendar date ('YYYY-MM-DD') payment is due. */
+  dueDate: string;
+  status: InvoiceStatus;
+  items: InvoiceLineItem[];
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+/** The showcase category a portfolio project belongs to. */
+export type PortfolioCategory = "Business" | "E-Commerce" | "SaaS" | "Other";
+
+export const PORTFOLIO_CATEGORIES: readonly PortfolioCategory[] = [
+  "Business",
+  "E-Commerce",
+  "SaaS",
+  "Other",
+];
+
+/**
+ * A document in the `portfolio` collection — a showcase project admins manage
+ * from the dashboard and that renders on the public marketing site. Only
+ * `published` items are exposed publicly; `order` controls their display order.
+ * Optional fields (industry, projectUrl, githubUrl) are stored as empty strings
+ * when unset so the security-rule shape can pin the full key set.
+ */
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  category: PortfolioCategory;
+  industry: string;
+  /** Cover image URL. */
+  imageUrl: string;
+  technologies: string[];
+  /** Live demo / project URL. */
+  projectUrl: string;
+  /** Optional source repository URL. */
+  githubUrl: string;
+  /** Display order on the public page (ascending). */
+  order: number;
+  /** When false the item is a draft, hidden from the public site. */
+  published: boolean;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
 /** A document in the `clients` collection. */
 export interface Client {
   id: string;

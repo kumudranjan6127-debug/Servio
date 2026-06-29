@@ -108,6 +108,8 @@ This satisfies the issue's examples:
 | `projects` | auto | Delivery projects |
 | `projectUpdates` | auto | Admin→client progress updates (by client email) |
 | `projectBilling` | client email | Admin→client project cost + payments (by client email) |
+| `projectInvoices` | auto | Admin→client invoices (by client email) |
+| `portfolio` | auto | Admin-managed public showcase projects |
 | `clients` | auto | Client directory |
 | `messages` | auto | Inbound contact/quote submissions |
 | `audit_logs` | auto | Append-only record of sensitive actions |
@@ -159,6 +161,34 @@ This satisfies the issue's examples:
 // (Admin → Billing). Rules pin the top-level shape and bound the payments list;
 // individual payment entries are validated by the client parser
 // (src/dashboard/lib/payments.ts) since rules cannot iterate a list.
+```
+
+### `projectInvoices/{id}`
+```ts
+{ clientEmail, number, date: 'YYYY-MM-DD', dueDate: 'YYYY-MM-DD', status,
+  items: { description, amount }[], createdAt, updatedAt }
+// status: 'paid' | 'unpaid' | 'overdue'
+//
+// An invoice an admin issues to a client (Admin → Invoices), shown on the client
+// dashboard's Invoices section. clientEmail (lowercased) addresses it; the client
+// reads only invoices matching their own verified auth-token email, and DERIVES
+// the total from `items` — only the items are stored. Admins with projects:edit
+// create/edit (e.g. mark paid)/delete; the rules pin the shape and bound the
+// items list (clientEmail + createdAt immutable on update).
+```
+
+### `portfolio/{id}`
+```ts
+{ title, description, category, industry, imageUrl, technologies: string[],
+  projectUrl, githubUrl, order, published, createdAt, updatedAt }
+// category: 'Business' | 'E-Commerce' | 'SaaS' | 'Other'
+//
+// Admin-managed showcase projects rendered on the public marketing site
+// (Admin → Portfolio). The PUBLIC (unauthenticated) visitor may read only
+// `published == true` items; projects:view admins read all (incl. drafts).
+// projects:edit admins create/update/delete, with the document shape pinned by
+// the rules. `order` controls the public display order; optional fields are
+// stored as empty strings so the rule can pin the full key set.
 ```
 
 ### `clients/{id}`
@@ -333,6 +363,8 @@ data across every page.
 | `/admin/projects` | `projects:view` |
 | `/admin/updates` | `projects:view` |
 | `/admin/billing` | `projects:view` |
+| `/admin/invoices` | `projects:view` |
+| `/admin/portfolio` | `projects:view` |
 | `/admin/clients` | `clients:view` |
 | `/admin/messages` | `messages:view` |
 | `/admin/audit` | `audit:view` (super_admin + backend_dev) |

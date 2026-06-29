@@ -5,6 +5,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
 import type { Project } from "../types";
@@ -13,6 +14,24 @@ export async function fetchClientProjects(uid: string): Promise<Project[]> {
   const q = query(collection(db, "projects"), where("clientId", "==", uid));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Project);
+}
+
+export function subscribeClientProjects(
+  uid: string,
+  onUpdate: (projects: Project[]) => void,
+  onError: (error: Error) => void
+) {
+  const q = query(collection(db, "projects"), where("clientId", "==", uid));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const projects = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Project);
+      onUpdate(projects);
+    },
+    (error) => {
+      onError(error);
+    }
+  );
 }
 
 export async function fetchProjectById(

@@ -1,6 +1,30 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from "react";
+import { lazy as reactLazy, Suspense, useEffect, useLayoutEffect, useRef } from "react";
 import { Route, useLocation, createBrowserRouter, RouterProvider, createRoutesFromElements, Outlet } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
+
+function lazy<T extends React.ComponentType<unknown>>(
+  componentImport: () => Promise<{ default: T }>
+) {
+  return reactLazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem("page-has-been-force-refreshed") || "false"
+    );
+
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem("page-has-been-force-refreshed", "false");
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem("page-has-been-force-refreshed", "true");
+        window.location.reload();
+        return new Promise<{ default: T }>(() => {});
+      }
+      throw error;
+    }
+  });
+}
 import { SEO } from "./components/SEO";
 import { SITE_URL } from "./lib/siteConfig";
 import { AnimatePresence, motion } from "motion/react";
@@ -42,7 +66,6 @@ const PaymentManagement = lazy(() => import('../dashboard/pages/PaymentManagemen
 const InvoiceManagement = lazy(() => import('../dashboard/pages/InvoiceManagement').then(m => ({ default: m.InvoiceManagement })));
 const ProjectResources = lazy(() => import('../dashboard/pages/ProjectResources').then(m => ({ default: m.ProjectResources })));
 const ProjectEstimation = lazy(() => import('../dashboard/pages/ProjectEstimation').then(m => ({ default: m.ProjectEstimation })));
-const PricingConfig = lazy(() => import('../dashboard/pages/PricingConfig').then(m => ({ default: m.PricingConfig })));
 const NotificationCenter = lazy(() => import('../dashboard/notifications/NotificationCenter').then(m => ({ default: m.NotificationCenter })));
 const NotificationPreferences = lazy(() => import('../dashboard/notifications/NotificationPreferences').then(m => ({ default: m.NotificationPreferences })));
 const About = lazy(() => import('./components/About').then(m => ({ default: m.About })));
@@ -206,7 +229,7 @@ function RootLayout() {
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route element={<RootLayout />}>
+    <Route element={<RootLayout />} errorElement={<GlobalErrorBoundary />}>
       {/* Only the landing route is gated behind the splash intro. */}
       <Route path="/" element={<LandingShell />} />
       <Route path="/signin" element={<><SEO title="Sign In" noIndex /><SignIn /></>} />
@@ -235,7 +258,6 @@ const router = createBrowserRouter(
         <Route path="invoices" element={<InvoiceManagement />} />
         <Route path="resources" element={<ProjectResources />} />
         <Route path="estimation" element={<ProjectEstimation />} />
-        <Route path="pricing-config" element={<PricingConfig />} />
         <Route path="notifications" element={<NotificationCenter />} />
         <Route path="notification-preferences" element={<NotificationPreferences />} />
       </Route>

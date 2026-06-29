@@ -13,6 +13,7 @@ import {
   normalizeEmail,
   parseClientUpdate,
   sortByNewest,
+  summarizeUpdates,
   type ClientUpdate,
 } from "./updates";
 
@@ -83,5 +84,47 @@ describe("sortByNewest", () => {
       sortByNewest,
     );
     expect(ordered.map((u) => u.id)).toEqual(["new", "old", "pending"]);
+  });
+});
+
+describe("summarizeUpdates", () => {
+  const make = (
+    type: ClientUpdate["type"],
+    ms: number | null,
+  ): ClientUpdate => ({
+    id: `${type}-${ms}`,
+    title: "t",
+    description: "d",
+    type,
+    createdAt: ms == null ? null : new Date(ms),
+  });
+
+  it("counts totals, milestones, and the date range regardless of order", () => {
+    const s = summarizeUpdates([
+      make("milestone", 3000),
+      make("feature", 1000),
+      make("milestone", 5000),
+      make("info", null),
+    ]);
+    expect(s.total).toBe(4);
+    expect(s.milestones).toBe(2);
+    expect(s.latest?.getTime()).toBe(5000);
+    expect(s.started?.getTime()).toBe(1000);
+  });
+
+  it("returns an empty summary for no updates", () => {
+    expect(summarizeUpdates([])).toEqual({
+      total: 0,
+      milestones: 0,
+      latest: null,
+      started: null,
+    });
+  });
+
+  it("tolerates updates with no resolved timestamp", () => {
+    const s = summarizeUpdates([make("info", null), make("feature", null)]);
+    expect(s.total).toBe(2);
+    expect(s.latest).toBeNull();
+    expect(s.started).toBeNull();
   });
 });
