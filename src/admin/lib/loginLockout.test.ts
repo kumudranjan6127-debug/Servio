@@ -16,7 +16,7 @@
  * Run with: npx vitest run src/admin/lib/loginLockout.test.ts
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   clearLoginLockout,
   LOGIN_LOCKOUT_MS,
@@ -163,5 +163,45 @@ describe("clearLoginLockout — successful sign-in resets state", () => {
     recordLoginFailure("other@example.com", T0);
     clearLoginLockout(EMAIL);
     expect(readLoginLockout("other@example.com", T0).attempts).toBe(1);
+  });
+});
+
+// ─── Storage unavailable (private mode / quota / blocked) ─────────────────────
+//
+// Every public function wraps its localStorage call in try/catch so the login
+// gate keeps working when storage throws (Safari private mode, quota exceeded,
+// or storage disabled by policy). These force each access to throw and assert
+// the fallback stays a clean slate and never propagates the error to the caller.
+
+describe("loginLockout — storage failures degrade gracefully", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("readLoginLockout returns a clean slate when getItem throws", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+    expect(() => readLoginLockout(EMAIL, T0)).not.toThrow();
+    expect(readLoginLockout(EMAIL, T0)).toEqual({ attempts: 0, lockedUntil: null });
+  });
+
+  it("recordLoginFailure still returns the computed state when setItem throws", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("QuotaExceededError");
+    });
+    let result: ReturnType<typeof recordLoginFailure> | undefined;
+    expect(() => {
+      result = recordLoginFailure(EMAIL, T0);
+    }).not.toThrow();
+    // The in-memory result is correct even though it could not be persisted.
+    expect(result).toEqual({ attempts: 1, lockedUntil: null });
+  });
+
+  it("clearLoginLockout does not throw when removeItem throws", () => {
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+    expect(() => clearLoginLockout(EMAIL)).not.toThrow();
   });
 });
