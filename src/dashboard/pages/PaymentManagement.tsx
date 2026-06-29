@@ -90,7 +90,7 @@ function PageTitle() {
 
 function loadRazorpay() {
   return new Promise((resolve) => {
-    // @ts-ignore
+    // @ts-expect-error - Razorpay injected via script
     if (window.Razorpay) {
       resolve(true);
       return;
@@ -259,7 +259,7 @@ function BillingView({ billing }: { billing: ClientBilling }) {
         name: "Servio",
         description: "Project Billing",
         order_id: orderData.id,
-        handler: async function (response: any) {
+        handler: async function (response: Record<string, string>) {
           const verifyRes = await fetch(`${baseUrl}/api/razorpay?action=verifyPayment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -288,11 +288,12 @@ function BillingView({ billing }: { billing: ClientBilling }) {
         },
       };
 
-      // @ts-ignore
+      // @ts-expect-error - Razorpay injected via script
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to initiate payment");
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(err.message || "Failed to initiate payment");
     } finally {
       setIsProcessing(false);
     }

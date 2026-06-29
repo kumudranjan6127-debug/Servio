@@ -136,7 +136,7 @@ export default async function handler(
       }
 
       const data = billingDoc.data();
-      let payments: any[] = data?.payments || [];
+      let payments: Record<string, unknown>[] = data?.payments || [];
 
       if (pendingPaymentId) {
         // Update the existing pending payment
