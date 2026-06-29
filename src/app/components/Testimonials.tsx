@@ -2,6 +2,7 @@ import { motion, useReducedMotion, useInView } from "motion/react";
 import { useRef } from "react";
 import { Quote, Star } from "lucide-react";
 import { TypingText } from "./TypingText";
+import { Reveal } from "./motion/Reveal";
 import priya from "../../assets/testimonials/priya.jpg";
 import arjun from "../../assets/testimonials/arjun.jpg";
 import ananya from "../../assets/testimonials/ananya.jpg";
@@ -106,6 +107,11 @@ const testimonials: Testimonial[] = [
   },
 ];
 
+/** Ogee / multifoil jharokha arch — a palace window the headshot reads through.
+ *  Drawn in a 200×260 user space; clip + zari rim share the same path. */
+const JHAROKHA_PATH =
+  "M100 8 C78 8 40 14 22 44 C12 62 8 80 8 100 L8 244 Q8 258 22 258 L178 258 Q192 258 192 244 L192 100 C192 80 188 62 178 44 C160 14 122 8 100 8 Z";
+
 function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex gap-1" role="img" aria-label={`Rated ${rating} out of 5 stars`}>
@@ -113,7 +119,7 @@ function StarRating({ rating }: { rating: number }) {
         <Star
           key={i}
           className={`w-4 h-4 ${
-            i < rating ? "fill-amber-400 text-amber-400" : "fill-white/10 text-white/20"
+            i < rating ? "fill-gold text-gold" : "fill-muted-foreground/20 text-muted-foreground/30"
           }`}
         />
       ))}
@@ -121,35 +127,90 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+/** The featured "spotlight" testimonial, framed in a jharokha window. */
+function FeaturedTestimonial({ testimonial }: { testimonial: Testimonial }) {
+  return (
+    <Reveal className="mb-14 md:mb-16">
+      <figure className="glass glass-thick mx-auto flex max-w-3xl flex-col items-center gap-8 rounded-[2rem] p-8 text-center md:flex-row md:items-center md:gap-10 md:p-10 md:text-left">
+        {/* Jharokha — a view through a palace window */}
+        <div
+          className="relative mx-auto w-[168px] shrink-0 sm:w-[192px]"
+          style={{ aspectRatio: "200 / 260" }}
+        >
+          <svg
+            viewBox="0 0 200 260"
+            className="h-full w-full drop-shadow-xl"
+            preserveAspectRatio="xMidYMid meet"
+            aria-hidden
+          >
+            <defs>
+              <clipPath id="jharokha-arch">
+                <path d={JHAROKHA_PATH} />
+              </clipPath>
+            </defs>
+            <image
+              href={testimonial.avatar}
+              width="200"
+              height="260"
+              preserveAspectRatio="xMidYMid slice"
+              clipPath="url(#jharokha-arch)"
+            />
+            {/* Zari rim — gold thread tracing the arch */}
+            <path d={JHAROKHA_PATH} fill="none" stroke="var(--gold)" strokeWidth="3" />
+            <path d={JHAROKHA_PATH} fill="none" stroke="var(--gold-light)" strokeWidth="1" opacity="0.55" />
+          </svg>
+        </div>
+
+        <figcaption className="flex flex-1 flex-col items-center md:items-start">
+          <span className="eyebrow text-gold">Client Spotlight</span>
+          <Quote aria-hidden className="mt-3 h-7 w-7 rotate-180 text-gold/40" fill="currentColor" />
+          <blockquote className="mt-2 font-display text-xl leading-snug text-foreground md:text-[1.6rem] md:leading-snug">
+            {testimonial.text}
+          </blockquote>
+          <div className="mt-7 flex w-full flex-col items-center gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
+            <div>
+              <div className="font-semibold text-foreground">{testimonial.name}</div>
+              <div className="text-sm text-muted-foreground">
+                {testimonial.role} · {testimonial.company}
+              </div>
+            </div>
+            <StarRating rating={testimonial.rating} />
+          </div>
+        </figcaption>
+      </figure>
+    </Reveal>
+  );
+}
+
 function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <article className="group/card relative w-[340px] sm:w-[400px] shrink-0 rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-indigo-400/40 hover:bg-white/[0.08] hover:shadow-2xl hover:shadow-indigo-500/20">
+    <article className="glass group/card relative w-[340px] shrink-0 rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-copper/20 sm:w-[400px]">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/0 to-cyan-500/0 opacity-0 transition-opacity duration-300 group-hover/card:from-indigo-500/10 group-hover/card:to-cyan-500/10 group-hover/card:opacity-100"
+        className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-[var(--copper)]/0 to-[var(--peacock)]/0 opacity-0 transition-opacity duration-300 group-hover/card:from-[var(--copper)]/10 group-hover/card:to-[var(--peacock)]/10 group-hover/card:opacity-100"
       />
 
       <Quote
         aria-hidden
-        className="absolute right-6 top-6 h-10 w-10 rotate-180 text-indigo-400/30 transition-colors duration-300 group-hover/card:text-indigo-400/60"
+        className="absolute right-6 top-6 h-10 w-10 rotate-180 text-gold/30 transition-colors duration-300 group-hover/card:text-gold/60"
         fill="currentColor"
       />
 
       <div className="relative">
         <StarRating rating={testimonial.rating} />
 
-        <p className="mt-5 text-white/85 leading-relaxed">{testimonial.text}</p>
+        <p className="mt-5 leading-relaxed text-foreground/85">{testimonial.text}</p>
 
-        <div className="mt-7 flex items-center gap-4 border-t border-white/10 pt-5">
+        <div className="mt-7 flex items-center gap-4 border-t border-border pt-5">
           <img
             src={testimonial.avatar}
             alt={testimonial.name}
             loading="lazy"
-            className="h-12 w-12 rounded-full border-2 border-indigo-400/50 object-cover"
+            className="h-12 w-12 rounded-full border-2 border-gold/50 object-cover"
           />
           <div>
-            <div className="font-bold text-white">{testimonial.name}</div>
-            <div className="text-sm text-gray-400">
+            <div className="font-bold text-foreground">{testimonial.name}</div>
+            <div className="text-sm text-muted-foreground">
               {testimonial.role} · {testimonial.company}
             </div>
           </div>
@@ -176,14 +237,14 @@ function MarqueeRow({
   return (
     <div
       ref={ref}
-      className="testimonial-marquee group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+      className="testimonial-marquee group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper/60"
       role="group"
       tabIndex={0}
       aria-label={`${label}. Hover or focus to pause the auto-scrolling. Use arrow keys to scroll when motion is reduced.`}
     >
-      {/* Edge fade masks */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-[#0f0f1a] to-transparent sm:w-28" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#1a1040] to-transparent sm:w-28" />
+      {/* Edge fade masks — dissolve the marquee into the granite band */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-granite to-transparent sm:w-28" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-granite to-transparent sm:w-28" />
 
       <div
         className="testimonial-marquee-track flex w-max gap-6"
@@ -205,40 +266,66 @@ function MarqueeRow({
 
 export function Testimonials() {
   const reduce = useReducedMotion();
-  const firstRow = testimonials.slice(0, 5);
-  const secondRow = testimonials.slice(5);
+  // Spotlight the first testimonial; the marquee rows use the rest so the
+  // featured quote never renders twice.
+  const [featured, ...marquee] = testimonials;
+  const firstRow = marquee.slice(0, 5);
+  const secondRow = marquee.slice(5);
 
   return (
     <section
       aria-labelledby="testimonials-title"
-      className="overflow-hidden bg-gradient-to-br from-[#0f0f1a] to-[#1a1040] py-20 md:py-32"
+      className="relative overflow-hidden bg-granite py-20 md:py-32"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
-          whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: reduce ? 0 : 0.6 }}
-          className="mb-16 text-center"
-        >
-          <span className="text-sm font-semibold uppercase tracking-wider text-cyan-400">
-            Testimonials
-          </span>
-          <h2 id="testimonials-title" className="mb-4 mt-3 text-4xl font-bold text-white md:text-5xl">
-            What Our{" "}
-            <span className="bg-gradient-to-r from-[#4F46E5] to-[#06B6D4] bg-clip-text text-transparent">
-              <TypingText text="Clients Say" delay={150} cursorColor="bg-indigo-500" />
-            </span>
-          </h2>
-          <p className="mx-auto max-w-2xl text-lg text-gray-400">
-            Don't just take our word for it — hear from the businesses we've helped grow.
-          </p>
-        </motion.div>
-      </div>
+      {/* Seam bleeds — soften the sandstone→granite transition into/out of the band.
+          Theme-aware (`--background`): sandstone in light mode, granite in dark. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background to-transparent"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background to-transparent"
+      />
+      {/* Warm copper→peacock depth glow over the granite band (replaces indigo night). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--copper)]/8 via-transparent to-[var(--peacock)]/10"
+      />
 
-      <div className="flex flex-col gap-6">
-        <MarqueeRow items={firstRow} direction="normal" duration="52s" label="Client testimonials, row one" />
-        <MarqueeRow items={secondRow} direction="reverse" duration="44s" label="Client testimonials, row two" />
+      {/* Always-dark band: force the dark glass tokens so frosted cards stay
+          legible regardless of the site's light/dark theme. */}
+      <div className="dark relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
+            whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: reduce ? 0 : 0.6 }}
+            className="mb-16 text-center"
+          >
+            <span className="eyebrow text-accent">Testimonials</span>
+            <h2
+              id="testimonials-title"
+              className="mb-4 mt-3 font-display text-4xl font-bold text-foreground md:text-5xl"
+            >
+              What Our{" "}
+              <span className="text-gradient-brand">
+                <TypingText text="Clients Say" delay={150} cursorColor="bg-primary" />
+              </span>
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+              Don't just take our word for it — hear from the businesses we've helped grow.
+            </p>
+          </motion.div>
+
+          <FeaturedTestimonial testimonial={featured} />
+        </div>
+
+        <div className="flex flex-col gap-6">
+          <MarqueeRow items={firstRow} direction="normal" duration="52s" label="Client testimonials, row one" />
+          <MarqueeRow items={secondRow} direction="reverse" duration="44s" label="Client testimonials, row two" />
+        </div>
       </div>
     </section>
   );

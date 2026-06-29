@@ -1,266 +1,405 @@
-import { motion, useReducedMotion } from 'motion/react';
-import { Smartphone, Zap, TrendingUp, Sparkles } from 'lucide-react';
-import { useState, useRef } from 'react';
-import { useInView } from 'motion/react';
+import { motion, useReducedMotion, useScroll, useTransform, type Variants } from 'motion/react';
+import { Smartphone, Zap } from 'lucide-react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { scrollToSection } from '../lib/scrollToSection';
+import { GlassPanel } from './GlassPanel';
+import { Aurora } from './Aurora';
+import { MagneticButton } from './MagneticButton';
+import { MandalaRing, ZariHairline, DevanagariEyebrow } from './motifs';
+import { useInViewMount } from '../hooks/useInViewMount';
+import { EASE, DUR } from '../lib/motion';
+import { cn } from './ui/utils';
 
-const heroImage = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB3ZWJzaXRlJTIwZGFzaGJvYXJkJTIwZGVzaWdufGVufDF8fHx8MTc4MTcwMjY1OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
-
-const floatingCards = [
-  { icon: Smartphone, text: 'Mobile Responsive', color: 'from-cyan-500 to-blue-500' },
-  { icon: Zap, text: 'Fast Delivery', color: 'from-purple-500 to-pink-500' },
-  { icon: TrendingUp, text: 'SEO Optimized', color: 'from-indigo-500 to-purple-500' },
-  { icon: Sparkles, text: 'Custom Design', color: 'from-orange-500 to-red-500' },
+/* Headline split into words so they can rise + settle individually. Only the
+   final word carries the brand-gradient accent. */
+const HEADLINE: { t: string; accent?: boolean }[] = [
+  { t: 'Your' },
+  { t: 'Business' },
+  { t: 'Deserves' },
+  { t: 'a' },
+  { t: 'Website' },
+  { t: 'That' },
+  { t: 'Converts', accent: true },
 ];
+
+/* Self-rendered "glass dashboard" content — illustrative product UI that proves
+   the craft. Tokens only, so it adapts to light + dark with no `dark:` forks. */
+const KPIS: { label: string; to: number; suffix: string; dot: string }[] = [
+  { label: 'Conversion', to: 42, suffix: '%', dot: 'bg-saffron' },
+  { label: 'Avg. Speed', to: 98, suffix: '', dot: 'bg-peacock' },
+  { label: 'Sessions', to: 24, suffix: 'k', dot: 'bg-gold' },
+];
+
+const BARS: { h: number; tone: 'brand' | 'gold' | 'peacock' }[] = [
+  { h: 38, tone: 'brand' },
+  { h: 58, tone: 'brand' },
+  { h: 46, tone: 'peacock' },
+  { h: 72, tone: 'brand' },
+  { h: 54, tone: 'brand' },
+  { h: 88, tone: 'gold' },
+  { h: 66, tone: 'brand' },
+];
+
+const BAR_TONE: Record<'brand' | 'gold' | 'peacock', string> = {
+  brand: 'bg-grad-brand',
+  gold: 'bg-gold',
+  peacock: 'bg-peacock',
+};
+
+/* Floating accent cards — kept for the pointer-parallax, now on glass with
+   token-coloured chips. */
+const FLOATING = [
+  { icon: Smartphone, text: 'Mobile Responsive', chip: 'bg-peacock' },
+  { icon: Zap, text: 'Fast Delivery', chip: 'bg-saffron' },
+] as const;
+
+/** rAF count-up — gated by reduced-motion and a `run` flag (mount when in view). */
+function StatNumber({ to, suffix = '', run }: { to: number; suffix?: string; run: boolean }) {
+  const reduce = useReducedMotion();
+  const [n, setN] = useState(0);
+
+  useEffect(() => {
+    if (!run) return;
+    if (reduce) {
+      setN(to);
+      return;
+    }
+    let raf = 0;
+    let start = 0;
+    const dur = 1300;
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+    const step = (now: number) => {
+      if (!start) start = now;
+      const p = Math.min((now - start) / dur, 1);
+      setN(Math.round(to * easeOut(p)));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [to, run, reduce]);
+
+  return (
+    <span className="nums-tabular">
+      {n}
+      {suffix}
+    </span>
+  );
+}
 
 export function Hero() {
   const reduce = useReducedMotion();
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  // Centre (0.5, 0.5) so parallax transforms read zero offset before the first
+  // pointer move — otherwise the mock/cards render shifted on initial paint.
+  const [mouse, setMouse] = useState({ x: 0.5, y: 0.5 });
   const containerRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(containerRef, { margin: "200px" });
+  const { ref: mountRef, inView } = useInViewMount<HTMLDivElement>();
+
+  // Subtle scroll parallax for the mock + mandala (transform-only; LCP-safe).
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end start'] });
+  const mockY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -36]);
+  const mandalaY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 48]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (reduce) return;
-    if (!containerRef.current) return;
+    if (reduce || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    setMousePosition({
+    setMouse({
       x: (e.clientX - rect.left) / rect.width,
       y: (e.clientY - rect.top) / rect.height,
     });
   };
 
+  const wordContainer: Variants = {
+    hidden: {},
+    show: { transition: { staggerChildren: reduce ? 0 : 0.06, delayChildren: 0 } },
+  };
+  const word: Variants = {
+    hidden: { opacity: 0, y: reduce ? 0 : '0.55em' },
+    show: { opacity: 1, y: 0, transition: { duration: reduce ? 0 : 0.5, ease: EASE.enter } },
+  };
 
   return (
-    <section id="hero" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 pt-20" onMouseMove={handleMouseMove} ref={containerRef}>
-      {/* Gradient Mesh Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className={`absolute -top-1/2 -left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-indigo-400/30 to-purple-400/30 dark:from-indigo-600/20 dark:to-purple-600/20 rounded-full blur-3xl ${isInView ? 'animate-pulse' : ''} motion-reduce:animate-none`} />
-        <div className={`absolute -bottom-1/2 -right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-cyan-400/30 to-blue-400/30 dark:from-cyan-600/20 dark:to-blue-600/20 rounded-full blur-3xl ${isInView ? 'animate-pulse' : ''} motion-reduce:animate-none`} style={{ animationDelay: '1s' }} />
-      </div>
+    <section
+      id="hero"
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20"
+    >
+      <Aurora intensity={0.6} />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left Content */}
-          <motion.div
-            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
-            animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-            transition={{ duration: reduce ? 0 : 0.6 }}
-            className="text-center lg:text-left"
-          >
+          {/* ── Left: copy ─────────────────────────────────────────────── */}
+          <div className="text-center lg:text-left" ref={mountRef}>
+            {/* Availability pill */}
             <motion.div
-              initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-              animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-              transition={{ duration: reduce ? 0 : 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-full border border-indigo-100 dark:border-indigo-900 mb-6"
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduce ? 0 : DUR.fast, ease: EASE.enter }}
             >
-              <span className={`w-2 h-2 bg-green-500 rounded-full ${isInView ? 'animate-pulse' : ''} motion-reduce:animate-none`} />
-              <span className="text-sm text-gray-700 dark:text-gray-200">Available for new projects</span>
+              <GlassPanel
+                tier="thin"
+                className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-peacock opacity-60 animate-ping motion-reduce:hidden" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-peacock" />
+                </span>
+                <span className="text-muted-foreground">Available for new projects</span>
+              </GlassPanel>
             </motion.div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
-              <span className="hero-shimmer">
-                Your Business Deserves a Website That{' '}
-              </span>
-              <span className="converts-glow bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Converts
-              </span>
-            </h1>
+            {/* Devanagari eyebrow */}
+            <motion.div
+              className="mt-6"
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduce ? 0 : DUR.fast, ease: EASE.enter, delay: reduce ? 0 : 0.08 }}
+            >
+              <DevanagariEyebrow hi="नमस्ते" en="Welcome to Servio" />
+            </motion.div>
 
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto lg:mx-0">
+            {/* Headline — words rise + settle; only the accent word fades from
+                gradient so the LCP text paints fast. */}
+            <motion.h1
+              variants={wordContainer}
+              initial="hidden"
+              animate="show"
+              className="font-display text-display mt-4 mb-6 text-foreground"
+            >
+              {HEADLINE.map((w, i) => (
+                <Fragment key={`${w.t}-${i}`}>
+                  <motion.span
+                    variants={word}
+                    className={cn('inline-block', w.accent && 'text-gradient-brand')}
+                  >
+                    {w.t}
+                  </motion.span>
+                  {i < HEADLINE.length - 1 && ' '}
+                </Fragment>
+              ))}
+            </motion.h1>
+
+            <motion.p
+              className="text-lede text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0"
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduce ? 0 : DUR.base, ease: EASE.enter, delay: reduce ? 0 : 0.28 }}
+            >
               We design and develop modern, fast, and scalable websites tailored to your business goals.
-            </p>
+            </motion.p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <motion.button
-                whileHover={reduce ? undefined : { scale: 1.05 }}
-                whileTap={reduce ? undefined : { scale: 0.95 }}
-                onClick={() => scrollToSection('contact')}
-                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:shadow-2xl hover:shadow-indigo-500/50 transition-all duration-300 font-semibold"
-              >
+            {/* CTAs spring in */}
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                reduce
+                  ? { duration: 0 }
+                  : { type: 'spring', stiffness: 260, damping: 22, delay: 0.36 }
+              }
+            >
+              <MagneticButton onClick={() => scrollToSection('contact')} className="px-8 py-4 shadow-elev-3">
                 Get Free Quote
-              </motion.button>
-              <motion.button
-                whileHover={reduce ? undefined : { scale: 1.05 }}
-                whileTap={reduce ? undefined : { scale: 0.95 }}
+              </MagneticButton>
+              <button
                 onClick={() => scrollToSection('portfolio')}
-                className="px-8 py-4 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-xl border-2 border-gray-200 dark:border-slate-700 hover:border-indigo-600 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-all duration-300 font-semibold"
+                className="glass glass-strong inline-flex items-center justify-center rounded-full px-8 py-4 font-medium text-foreground transition-transform duration-300 ease-out hover:-translate-y-0.5 active:scale-95"
               >
                 View Portfolio
-              </motion.button>
-            </div>
+              </button>
+            </motion.div>
 
-            {/* What we deliver — honest, verifiable claims rather than
-                unverified vanity metrics. */}
-            <div className="grid grid-cols-3 gap-6 mt-12 pt-12 border-t border-gray-200 dark:border-slate-700">
-              <div className="text-center lg:text-left">
-                <div className="text-2xl lg:text-3xl font-bold leading-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  100%
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Custom Code</div>
-              </div>
-              <div className="text-center lg:text-left">
-                <div className="text-2xl lg:text-3xl font-bold leading-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  Mobile-First
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Responsive Design</div>
-              </div>
-              <div className="text-center lg:text-left">
-                <div className="text-2xl lg:text-3xl font-bold leading-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  SEO-Ready
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Built to Rank</div>
+            {/* Stats — honest claims in glass chips. Zari hairline replaces the
+                plain top border. */}
+            <div className="mt-12 pt-8">
+              <ZariHairline className="mb-8 opacity-80" />
+              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                <GlassPanel tier="thin" className="rounded-xl px-3 py-4 text-center lg:text-left">
+                  <div className="font-display text-2xl lg:text-3xl leading-tight text-gradient-brand">
+                    <StatNumber to={100} suffix="%" run={inView} />
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">Custom Code</div>
+                </GlassPanel>
+                <GlassPanel tier="thin" className="rounded-xl px-3 py-4 text-center lg:text-left">
+                  <div className="font-display text-2xl lg:text-3xl leading-tight text-gradient-brand">
+                    Mobile First
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">Responsive Design</div>
+                </GlassPanel>
+                <GlassPanel tier="thin" className="rounded-xl px-3 py-4 text-center lg:text-left">
+                  <div className="font-display text-2xl lg:text-3xl leading-tight text-gradient-brand">
+                    SEO&#8209;Ready
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">Built to Rank</div>
+                </GlassPanel>
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Right Content - Dashboard Mockup */}
-          <motion.div
-            initial={reduce ? { opacity: 0 } : { opacity: 0, x: 20 }}
-            animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
-            transition={{ duration: reduce ? 0 : 0.6, delay: 0.2 }}
-            className="relative"
-          >
-            <div className="relative">
-              {/* Main Dashboard Image */}
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl dark:shadow-2xl dark:shadow-slate-900/50">
-                <img
-                  src={heroImage}
-                  alt="Modern Dashboard Design"
-                  className="w-full h-auto dark:opacity-80"
-                />
+          {/* ── Right: self-rendered glass dashboard mock ───────────────── */}
+          <div className="relative">
+            {/* Faint slowly-rotating mandala behind the mock */}
+            {inView && (
+              <motion.div
+                aria-hidden
+                style={{ y: mandalaY }}
+                className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-[0.13]"
+              >
+                <MandalaRing size={560} color="var(--gold)" />
+              </motion.div>
+            )}
+
+            <motion.div style={{ y: mockY }} className="relative z-10">
+              <div
+                style={
+                  reduce
+                    ? undefined
+                    : {
+                        transform: `translate(${(mouse.x - 0.5) * 10}px, ${(mouse.y - 0.5) * 10}px)`,
+                        transition: 'transform 0.2s ease-out',
+                      }
+                }
+              >
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-tr from-indigo-600/10 to-purple-600/10 dark:from-indigo-600/20 dark:to-purple-600/20"
-                  animate={reduce || !isInView ? undefined : {
-                    opacity: [0.6, 1, 0.6],
-                    scale: [1, 1.04, 1],
-                    backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
-                  }}
-                  transition={{
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                />
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, y: 26, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: reduce ? 0 : DUR.slow, ease: EASE.enter, delay: reduce ? 0 : 0.18 }}
+                >
+                <GlassPanel
+                  tier="thick"
+                  refract
+                  data-hero-mock
+                  className="relative overflow-hidden rounded-2xl p-3 sm:p-4 shadow-elev-4"
+                >
+                  <div className="flex gap-3 sm:gap-4">
+                    {/* Sidebar rail */}
+                    <div className="hidden sm:flex w-14 flex-shrink-0 flex-col items-center gap-4 rounded-xl border border-border bg-foreground/[0.04] py-4">
+                      <div className="h-7 w-7 rounded-lg bg-grad-brand shadow-elev-1" />
+                      <div className="flex flex-col items-center gap-3 pt-1">
+                        <span className="h-2.5 w-2.5 rounded-md bg-gold" />
+                        <span className="h-2.5 w-2.5 rounded-md bg-foreground/20" />
+                        <span className="h-2.5 w-2.5 rounded-md bg-foreground/20" />
+                        <span className="h-2.5 w-2.5 rounded-md bg-foreground/20" />
+                      </div>
+                      <div className="mt-auto h-6 w-6 rounded-full bg-foreground/15" />
+                    </div>
+
+                    {/* Main column */}
+                    <div className="flex-1 min-w-0">
+                      {/* Header bar */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-saffron" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-gold" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-peacock" />
+                          </div>
+                          <span className="hidden sm:block h-2.5 w-24 rounded-full bg-foreground/15" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="h-6 w-24 rounded-full border border-border bg-foreground/[0.04]" />
+                          <span className="h-6 w-6 rounded-full bg-grad-brand" />
+                        </div>
+                      </div>
+
+                      {/* KPI chips */}
+                      <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+                        {KPIS.map((k) => (
+                          <GlassPanel key={k.label} tier="thin" className="rounded-xl p-2.5 sm:p-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className={cn('h-1.5 w-1.5 rounded-full', k.dot)} />
+                              <span className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+                                {k.label}
+                              </span>
+                            </div>
+                            <div className="mt-1.5 font-display text-lg sm:text-xl leading-none text-foreground">
+                              <StatNumber to={k.to} suffix={k.suffix} run={inView} />
+                            </div>
+                          </GlassPanel>
+                        ))}
+                      </div>
+
+                      {/* Chart card */}
+                      <div className="mt-3 rounded-xl border border-border bg-foreground/[0.03] p-3 sm:p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="h-2 w-16 rounded-full bg-foreground/15" />
+                          <span className="h-2 w-10 rounded-full bg-peacock/50" />
+                        </div>
+                        <div className="flex h-24 sm:h-28 items-end gap-1.5 sm:gap-2">
+                          {BARS.map((b, i) => (
+                            <motion.div
+                              key={i}
+                              className={cn('flex-1 origin-bottom rounded-t-md', BAR_TONE[b.tone])}
+                              style={{ height: `${b.h}%` }}
+                              initial={reduce ? { scaleY: 1, opacity: 1 } : { scaleY: 0, opacity: 0 }}
+                              animate={{ scaleY: 1, opacity: 1 }}
+                              transition={{
+                                duration: reduce ? 0 : 0.5,
+                                ease: EASE.enter,
+                                delay: reduce ? 0 : 0.5 + i * 0.06,
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <div className="mt-3">
+                          <ZariHairline className="opacity-60" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </GlassPanel>
+                </motion.div>
               </div>
 
-              {/* Floating Cards */}
-              {floatingCards.map((card, index) => {
-                const cardAnimations = [
-                  {
-                    y: [0, -20, 0, 12, 0],
-                    x: [0, 8, 0, -8, 0],
-                    rotate: [-3, 3, -3],
-                  },
-                  {
-                    y: [0, -18, 0, 15, 0],
-                    x: [0, -10, 0, 10, 0],
-                    rotate: [2, -2, 2],
-                  },
-                  {
-                    y: [0, -25, 0, 10, 0],
-                    x: [0, 12, 0, -12, 0],
-                    rotate: [-2, 2, -2],
-                  },
-                  {
-                    y: [0, -22, 0, 14, 0],
-                    x: [0, -6, 0, 6, 0],
-                    rotate: [3, -3, 3],
-                  },
-                ];
-
-                const parallaxMultipliers = [8, -10, 6, -8];
-                const multiplier = reduce ? 0 : parallaxMultipliers[index];
-                const parallaxX = (mousePosition.x - 0.5) * multiplier;
-                const parallaxY = (mousePosition.y - 0.5) * multiplier;
-
+              {/* Floating accent cards — pointer parallax preserved */}
+              {FLOATING.map((card, index) => {
+                const mult = reduce ? 0 : index === 0 ? 9 : -9;
+                const px = (mouse.x - 0.5) * mult;
+                const py = (mouse.y - 0.5) * mult;
                 return (
                   <div
                     key={card.text}
-                    className={`absolute ${
-                      index === 0
-                        ? 'top-4 -left-4 sm:top-8 sm:-left-8'
-                        : index === 1
-                        ? 'top-1/3 -right-4 sm:-right-8'
-                        : index === 2
-                        ? 'bottom-1/3 -left-4 sm:-left-8'
-                        : 'bottom-8 -right-4 sm:-right-8'
-                    } hidden lg:block`}
+                    className={cn(
+                      'absolute z-20 hidden lg:block',
+                      index === 0 ? 'top-6 -left-6' : 'bottom-8 -right-6',
+                    )}
                     style={{
-                      transform: `translate(${parallaxX}px, ${parallaxY}px)`,
+                      transform: `translate(${px}px, ${py}px)`,
                       transition: 'transform 0.15s ease-out',
                     }}
                   >
                     <motion.div
-                      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 20 }}
-                      whileInView={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: '0px 0px -100px 0px' }}
-                      transition={{ duration: reduce ? 0 : 0.6, delay: 0.3 + index * 0.15 }}
-                    >
-                    <motion.div
-                      animate={reduce || !isInView ? undefined : { ...cardAnimations[index] }}
+                      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.92 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{
-                        duration: 5,
-                        repeat: Infinity,
-                        repeatType: 'mirror' as const,
-                        ease: 'easeInOut',
-                      }}
-                      whileHover={reduce ? undefined : {
-                        y: -12,
-                        scale: 1.08,
-                        rotate: 2,
-                        boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
-                      }}
-                      className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-gray-100 dark:border-slate-700 flex items-center gap-3 cursor-pointer group transition-shadow duration-300"
-                      style={{
-                        filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.1)) drop-shadow(0 0 20px rgba(99,102,241,0.1))',
+                        duration: reduce ? 0 : DUR.base,
+                        ease: EASE.enter,
+                        delay: reduce ? 0 : 0.55 + index * 0.12,
                       }}
                     >
-                        <motion.div
-                          className="absolute inset-0 rounded-2xl pointer-events-none"
-                          initial={{ opacity: 0 }}
-                          whileInView={{ opacity: 1 }}
-                          animate={reduce || !isInView ? undefined : {
-                            boxShadow: [
-                              `inset 0 0 20px rgba(99,102,241,0), inset 0 0 0px ${card.color}`,
-                              `inset 0 0 20px rgba(99,102,241,0.2), inset 0 0 1px rgba(99,102,241,0.5)`,
-                              `inset 0 0 20px rgba(99,102,241,0), inset 0 0 0px ${card.color}`,
-                            ],
-                          }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                        }}
-                      />
-
-                      <div
-                        className={`w-10 h-10 bg-gradient-to-br ${card.color} rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:shadow-2xl relative overflow-hidden`}
+                      <GlassPanel
+                        tier="strong"
+                        className="flex items-center gap-3 rounded-2xl px-4 py-3 shadow-elev-3"
                       >
-                        <motion.div
-                          className={`absolute inset-0 bg-gradient-to-br ${card.color} rounded-lg blur-md`}
-                          animate={reduce || !isInView ? undefined : {
-                            opacity: [0.3, 0.6, 0.3],
-                            scale: [1, 1.1, 1],
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                          }}
-                        />
-                        <card.icon className="w-5 h-5 text-white relative z-10" />
-                      </div>
-
-                      <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap relative z-10">
-                        {card.text}
-                      </span>
+                        <span
+                          className={cn(
+                            'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-white',
+                            card.chip,
+                          )}
+                        >
+                          <card.icon className="h-4 w-4" strokeWidth={2.2} />
+                        </span>
+                        <span className="whitespace-nowrap text-sm font-medium text-foreground">
+                          {card.text}
+                        </span>
+                      </GlassPanel>
                     </motion.div>
-                  </motion.div>
                   </div>
                 );
               })}
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </section>

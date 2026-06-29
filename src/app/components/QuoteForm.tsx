@@ -11,11 +11,28 @@ import {
 import { submitQuote } from "../lib/submitQuote";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
+import { GlassPanel } from "./GlassPanel";
+import { MagneticButton } from "./MagneticButton";
+import { Reveal } from "./motion/Reveal";
+import { Aurora } from "./Aurora";
+import { Toran, Jali, DevanagariEyebrow } from "./motifs";
+import { cn } from "./ui/utils";
 
 // Persisted submission timestamps for client-side rate limiting. Advisory only
 // (a user can clear storage) — the heavy lifting belongs on a server, but this
 // stops casual repeat-spam from the same browser at zero infra cost.
 const RATE_KEY = "servio:quote:submissions";
+
+// Fields that count toward the completion-progress bar (phone + description are
+// optional, so they're excluded). Purely presentational — validation is owned by
+// `evaluateSubmission` and is unaffected by this list.
+const REQUIRED_FIELDS = [
+  "name",
+  "email",
+  "business",
+  "budget",
+  "type",
+] as const satisfies readonly (keyof QuoteFormData)[];
 
 
 function readHistory(): number[] {
@@ -121,8 +138,14 @@ export function QuoteForm() {
   };
 
   const inputClass = (field: keyof QuoteFormData) =>
-    `w-full px-4 py-3 bg-white/10 backdrop-blur-sm border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all duration-200 ${errors[field] ? "border-red-400/60" : "border-white/20 hover:border-white/30"
-    }`;
+    cn(
+      "w-full rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/60",
+      "bg-foreground/5 border outline-none transition-all duration-200",
+      // per-field focus glow (zari gold)
+      "focus:ring-2 focus:ring-gold/35 focus:border-gold/50 focus:bg-foreground/[0.07]",
+      "focus:shadow-[0_0_24px_-8px_var(--gold)]",
+      errors[field] ? "border-destructive/60" : "border-border hover:border-foreground/25",
+    );
 
   // Shared aria wiring for a field: marks it invalid and points at its error text.
   const fieldAria = (field: keyof QuoteFormData) => ({
@@ -130,260 +153,338 @@ export function QuoteForm() {
     "aria-describedby": errors[field] ? `quote-${field}-error` : undefined,
   });
 
+  // Completion ratio over the required fields (drives the gradient progress bar).
+  const filledRequired = REQUIRED_FIELDS.filter((f) => form[f].trim() !== "").length;
+  const progress = Math.round((filledRequired / REQUIRED_FIELDS.length) * 100);
+
   return (
     <>
-    <UnsavedChangesDialog blocker={blocker} />
-    <section id="contact" aria-labelledby="quote-title" className="py-20 md:py-32 bg-gradient-to-br from-[#0f0f1a] via-[#1a0a2e] to-[#0f0f1a] relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+      <UnsavedChangesDialog blocker={blocker} />
+      <section
+        id="contact"
+        aria-labelledby="quote-title"
+        className="py-20 md:py-32 bg-background relative isolate overflow-hidden"
+      >
+        <Aurora />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wider">
-            Get in Touch
-          </span>
-          <h2 id="quote-title" className="text-4xl md:text-5xl font-bold text-white mt-3 mb-4">
-            Request Your{" "}
-            <span className="bg-gradient-to-r from-[#4F46E5] to-[#06B6D4] bg-clip-text text-transparent">
-              Free Proposal
-            </span>
-          </h2>
-          <p className="text-lg text-gray-400 max-w-xl mx-auto">
-            Tell us about your project and we'll send you a detailed proposal within 24 hours.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl shadow-black/40"
-        >
-          {submitted ? (
-            <div className="text-center py-12">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200 }}
-                className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6"
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="grid lg:grid-cols-[0.85fr_1.15fr] gap-6 lg:gap-8 items-start">
+            {/* ── LEFT: sticky reassurance rail ─────────────────────────────── */}
+            <div className="lg:sticky lg:top-28">
+              <GlassPanel
+                tier="strong"
+                className="relative overflow-hidden rounded-3xl p-8 shadow-elev-2"
               >
-                <CheckCircle2 className="w-10 h-10 text-green-400" />
-              </motion.div>
-              <h3 className="text-2xl font-bold text-white mb-3">Proposal Sent!</h3>
-              <p className="text-gray-400">
-                Thank you, {form.name}! We've received your request and will reach out within 24 hours.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} noValidate>
-              {/* Honeypot: hidden from humans (display:none keeps it out of the
-                  a11y tree and away from autofill) but present in the DOM, so a
-                  form-filling bot trips it. Neutral name = no autofill category.
-                  Do not remove. */}
-              <div className="hidden" aria-hidden="true">
-                <label htmlFor="referral_source">Leave this field empty</label>
-                <input
-                  ref={honeypotRef}
-                  type="text"
-                  id="referral_source"
-                  name="referral_source"
-                  tabIndex={-1}
-                  autoComplete="off"
-                  defaultValue=""
+                <Jali
+                  className="absolute -right-12 -top-12 h-56 w-56"
+                  color="var(--gold)"
+                  opacity={0.07}
                 />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Name */}
-                <div>
-                  <label htmlFor="quote-name" className="block text-sm font-medium text-gray-300 mb-2">
-                    Full Name <span className="text-indigo-400">*</span>
-                  </label>
-                  <input
-                    id="quote-name"
-                    type="text"
-                    autoComplete="name"
-                    placeholder="Sarah Chen"
-                    value={form.name}
-                    onChange={(e) => { markDirty(); setForm({ ...form, name: e.target.value }); }}
-                    className={inputClass("name")}
-                    {...fieldAria("name")}
-                  />
-                  {errors.name && <p id="quote-name-error" className="mt-1.5 text-red-400 text-xs">{errors.name}</p>}
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label htmlFor="quote-email" className="block text-sm font-medium text-gray-300 mb-2">
-                    Email Address <span className="text-indigo-400">*</span>
-                  </label>
-                  <input
-                    id="quote-email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="sarah@company.com"
-                    value={form.email}
-                    onChange={(e) => { markDirty(); setForm({ ...form, email: e.target.value }); }}
-                    className={inputClass("email")}
-                    {...fieldAria("email")}
-                  />
-                  {errors.email && <p id="quote-email-error" className="mt-1.5 text-red-400 text-xs">{errors.email}</p>}
-                </div>
-
-                {/* Phone (optional) */}
-                <div>
-                  <label htmlFor="quote-phone" className="block text-sm font-medium text-gray-300 mb-2">
-                    Phone Number <span className="text-gray-500">(optional)</span>
-                  </label>
-                  <input
-                    id="quote-phone"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    placeholder="+1 555 123 4567"
-                    value={form.phone}
-                    onChange={(e) => { markDirty(); setForm({ ...form, phone: e.target.value }); }}
-                    className={inputClass("phone")}
-                    {...fieldAria("phone")}
-                  />
-                  {errors.phone && <p id="quote-phone-error" className="mt-1.5 text-red-400 text-xs">{errors.phone}</p>}
-                </div>
-
-                {/* Business */}
-                <div>
-                  <label htmlFor="quote-business" className="block text-sm font-medium text-gray-300 mb-2">
-                    Business Name <span className="text-indigo-400">*</span>
-                  </label>
-                  <input
-                    id="quote-business"
-                    type="text"
-                    autoComplete="organization"
-                    placeholder="TechStart Inc."
-                    value={form.business}
-                    onChange={(e) => { markDirty(); setForm({ ...form, business: e.target.value }); }}
-                    className={inputClass("business")}
-                    {...fieldAria("business")}
-                  />
-                  {errors.business && (
-                    <p id="quote-business-error" className="mt-1.5 text-red-400 text-xs">
-                      {errors.business}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6 mt-6">
-                {/* Budget */}
-                <div>
-                  <label htmlFor="quote-budget" className="block text-sm font-medium text-gray-300 mb-2">
-                    Project Budget <span className="text-indigo-400">*</span>
-                  </label>
-                  <select
-                    id="quote-budget"
-                    value={form.budget}
-                    onChange={(e) => { markDirty(); setForm({ ...form, budget: e.target.value }); }}
-                    className={inputClass("budget")}
-                    {...fieldAria("budget")}
+                <div className="relative">
+                  <DevanagariEyebrow hi="स्वागत" en="Welcome" />
+                  <h2
+                    id="quote-title"
+                    className="mt-4 font-display text-3xl md:text-4xl font-bold leading-tight text-foreground"
                   >
-                    <option value="" disabled>Select a budget range</option>
-                    {budgetOptions.map((opt) => (
-                      <option key={opt} value={opt} className="bg-slate-800 text-white">{opt}</option>
-                    ))}
-                  </select>
-                  {errors.budget && <p id="quote-budget-error" className="mt-1.5 text-red-400 text-xs">{errors.budget}</p>}
-                </div>
-
-                {/* Website Type */}
-                <div>
-                  <label htmlFor="quote-type" className="block text-sm font-medium text-gray-300 mb-2">
-                    Website Type <span className="text-indigo-400">*</span>
-                  </label>
-                  <select
-                    id="quote-type"
-                    value={form.type}
-                    onChange={(e) => { markDirty(); setForm({ ...form, type: e.target.value }); }}
-                    className={inputClass("type")}
-                    {...fieldAria("type")}
-                  >
-                    <option value="" disabled>Select a website type</option>
-                    {websiteTypes.map((opt) => (
-                      <option key={opt} value={opt} className="bg-slate-800 text-white">{opt}</option>
-                    ))}
-                  </select>
-                  {errors.type && <p id="quote-type-error" className="mt-1.5 text-red-400 text-xs">{errors.type}</p>}
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="mt-6">
-                <label htmlFor="quote-description" className="block text-sm font-medium text-gray-300 mb-2">
-                  Project Description
-                </label>
-                <textarea
-                  id="quote-description"
-                  rows={4}
-                  placeholder="Tell us about your project goals, features, and timeline..."
-                  value={form.description}
-                  onChange={(e) => { markDirty(); setForm({ ...form, description: e.target.value }); }}
-                  className={`${inputClass("description")} resize-y`}
-                  {...fieldAria("description")}
-                />
-                {errors.description && (
-                  <p id="quote-description-error" className="mt-1.5 text-red-400 text-xs">
-                    {errors.description}
+                    Request Your <span className="text-gradient-brand">Free Proposal</span>
+                  </h2>
+                  <p className="mt-3 text-muted-foreground">
+                    Tell us about your project and we'll send you a detailed proposal within 24 hours.
                   </p>
-                )}
-              </div>
 
-              {formError && (
-                <div
-                  key={errorNonce}
-                  role="alert"
-                  aria-live="assertive"
-                  className="mt-6 rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-                >
-                  {formError}
+                  <ul className="mt-8 space-y-4">
+                    {[
+                      "Proposal in 24h",
+                      "Avg response < 4h",
+                      "Built in India, shipping worldwide",
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-3 text-sm text-foreground/90">
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rotate-45 rounded-[1px] bg-gold" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-8 flex flex-wrap gap-2 border-t border-border pt-6">
+                    {["No upfront payment", "30-day guarantee", "NDA on request"].map((badge) => (
+                      <span
+                        key={badge}
+                        className="rounded-full border border-border bg-foreground/5 px-3 py-1 text-xs font-medium text-muted-foreground"
+                      >
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              )}
+              </GlassPanel>
+            </div>
 
-              <div className="mt-8 text-sm text-gray-400 text-center">
-                By submitting this request, you agree to our{" "}
-                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
-                  Privacy Policy
-                </a>{" "}
-                and{" "}
-                <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
-                  Terms of Service
-                </a>.
-              </div>
+            {/* ── RIGHT: the form ───────────────────────────────────────────── */}
+            <Reveal delay={0.1} className="relative">
+              {/* Toran garland hung over the section */}
+              <Toran
+                className="absolute inset-x-6 top-0 -translate-y-1/2 opacity-70"
+                color="var(--gold)"
+              />
+              <GlassPanel
+                tier="strong"
+                className="relative overflow-hidden rounded-3xl p-6 sm:p-8 md:p-10 shadow-elev-3"
+              >
+                {submitted ? (
+                  <div className="text-center py-12">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 200 }}
+                      className="w-20 h-20 bg-peacock/15 rounded-full flex items-center justify-center mx-auto mb-6"
+                    >
+                      <CheckCircle2 className="w-10 h-10 text-peacock" />
+                    </motion.div>
+                    <h3 className="text-2xl font-bold text-foreground mb-3">Proposal Sent!</h3>
+                    <p className="text-muted-foreground">
+                      Thank you, {form.name}! We've received your request and will reach out within 24 hours.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} noValidate>
+                    {/* Honeypot: hidden from humans (display:none keeps it out of the
+                        a11y tree and away from autofill) but present in the DOM, so a
+                        form-filling bot trips it. Neutral name = no autofill category.
+                        Do not remove. */}
+                    <div className="hidden" aria-hidden="true">
+                      <label htmlFor="referral_source">Leave this field empty</label>
+                      <input
+                        ref={honeypotRef}
+                        type="text"
+                        id="referral_source"
+                        name="referral_source"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        defaultValue=""
+                      />
+                    </div>
 
-              <div className="mt-6">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50"
-                >
-                  {loading ? (
-                    "Sending Request..."
-                  ) : (
-                    <>
-                      Send Proposal Request <Send className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-        </motion.div>
-      </div>
-    </section>
+                    {/* Completion progress */}
+                    <div className="mb-8">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="eyebrow text-muted-foreground">Completion</span>
+                        <span className="nums-tabular text-sm font-medium text-foreground">{progress}%</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/10">
+                        <div
+                          className="h-full rounded-full bg-grad-brand transition-[width] duration-500 ease-out"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* ── About you ─────────────────────────────────────────── */}
+                    <fieldset className="m-0 min-w-0 border-0 p-0">
+                      <legend className="eyebrow mb-4 flex items-center gap-2 text-gold">
+                        <span className="h-1.5 w-1.5 rotate-45 bg-gold" aria-hidden />
+                        About you
+                      </legend>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Name */}
+                        <div>
+                          <label htmlFor="quote-name" className="block text-sm font-medium text-foreground/80 mb-2">
+                            Full Name <span className="text-saffron">*</span>
+                          </label>
+                          <input
+                            id="quote-name"
+                            type="text"
+                            autoComplete="name"
+                            placeholder="Sarah Chen"
+                            value={form.name}
+                            onChange={(e) => { markDirty(); setForm({ ...form, name: e.target.value }); }}
+                            className={inputClass("name")}
+                            {...fieldAria("name")}
+                          />
+                          {errors.name && <p id="quote-name-error" className="mt-1.5 text-destructive text-xs">{errors.name}</p>}
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                          <label htmlFor="quote-email" className="block text-sm font-medium text-foreground/80 mb-2">
+                            Email Address <span className="text-saffron">*</span>
+                          </label>
+                          <input
+                            id="quote-email"
+                            type="email"
+                            autoComplete="email"
+                            placeholder="sarah@company.com"
+                            value={form.email}
+                            onChange={(e) => { markDirty(); setForm({ ...form, email: e.target.value }); }}
+                            className={inputClass("email")}
+                            {...fieldAria("email")}
+                          />
+                          {errors.email && <p id="quote-email-error" className="mt-1.5 text-destructive text-xs">{errors.email}</p>}
+                        </div>
+
+                        {/* Phone (optional) */}
+                        <div>
+                          <label htmlFor="quote-phone" className="block text-sm font-medium text-foreground/80 mb-2">
+                            Phone Number <span className="text-muted-foreground">(optional)</span>
+                          </label>
+                          <input
+                            id="quote-phone"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="+1 555 123 4567"
+                            value={form.phone}
+                            onChange={(e) => { markDirty(); setForm({ ...form, phone: e.target.value }); }}
+                            className={inputClass("phone")}
+                            {...fieldAria("phone")}
+                          />
+                          {errors.phone && <p id="quote-phone-error" className="mt-1.5 text-destructive text-xs">{errors.phone}</p>}
+                        </div>
+
+                        {/* Business */}
+                        <div>
+                          <label htmlFor="quote-business" className="block text-sm font-medium text-foreground/80 mb-2">
+                            Business Name <span className="text-saffron">*</span>
+                          </label>
+                          <input
+                            id="quote-business"
+                            type="text"
+                            autoComplete="organization"
+                            placeholder="TechStart Inc."
+                            value={form.business}
+                            onChange={(e) => { markDirty(); setForm({ ...form, business: e.target.value }); }}
+                            className={inputClass("business")}
+                            {...fieldAria("business")}
+                          />
+                          {errors.business && (
+                            <p id="quote-business-error" className="mt-1.5 text-destructive text-xs">
+                              {errors.business}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </fieldset>
+
+                    {/* ── Your project ──────────────────────────────────────── */}
+                    <fieldset className="m-0 mt-8 min-w-0 border-0 p-0">
+                      <legend className="eyebrow mb-4 flex items-center gap-2 text-gold">
+                        <span className="h-1.5 w-1.5 rotate-45 bg-gold" aria-hidden />
+                        Your project
+                      </legend>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Budget */}
+                        <div>
+                          <label htmlFor="quote-budget" className="block text-sm font-medium text-foreground/80 mb-2">
+                            Project Budget <span className="text-saffron">*</span>
+                          </label>
+                          <select
+                            id="quote-budget"
+                            value={form.budget}
+                            onChange={(e) => { markDirty(); setForm({ ...form, budget: e.target.value }); }}
+                            className={inputClass("budget")}
+                            {...fieldAria("budget")}
+                          >
+                            <option value="" disabled>Select a budget range</option>
+                            {budgetOptions.map((opt) => (
+                              <option key={opt} value={opt} className="bg-background text-foreground">{opt}</option>
+                            ))}
+                          </select>
+                          {errors.budget && <p id="quote-budget-error" className="mt-1.5 text-destructive text-xs">{errors.budget}</p>}
+                        </div>
+
+                        {/* Website Type */}
+                        <div>
+                          <label htmlFor="quote-type" className="block text-sm font-medium text-foreground/80 mb-2">
+                            Website Type <span className="text-saffron">*</span>
+                          </label>
+                          <select
+                            id="quote-type"
+                            value={form.type}
+                            onChange={(e) => { markDirty(); setForm({ ...form, type: e.target.value }); }}
+                            className={inputClass("type")}
+                            {...fieldAria("type")}
+                          >
+                            <option value="" disabled>Select a website type</option>
+                            {websiteTypes.map((opt) => (
+                              <option key={opt} value={opt} className="bg-background text-foreground">{opt}</option>
+                            ))}
+                          </select>
+                          {errors.type && <p id="quote-type-error" className="mt-1.5 text-destructive text-xs">{errors.type}</p>}
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <div className="mt-6">
+                        <label htmlFor="quote-description" className="block text-sm font-medium text-foreground/80 mb-2">
+                          Project Description
+                        </label>
+                        <textarea
+                          id="quote-description"
+                          rows={4}
+                          placeholder="Tell us about your project goals, features, and timeline..."
+                          value={form.description}
+                          onChange={(e) => { markDirty(); setForm({ ...form, description: e.target.value }); }}
+                          className={cn(inputClass("description"), "resize-y")}
+                          {...fieldAria("description")}
+                        />
+                        {errors.description && (
+                          <p id="quote-description-error" className="mt-1.5 text-destructive text-xs">
+                            {errors.description}
+                          </p>
+                        )}
+                      </div>
+                    </fieldset>
+
+                    {formError && (
+                      <div
+                        key={errorNonce}
+                        role="alert"
+                        aria-live="assertive"
+                        className="mt-6 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                      >
+                        {formError}
+                      </div>
+                    )}
+
+                    <div className="mt-8 text-sm text-muted-foreground text-center">
+                      By submitting this request, you agree to our{" "}
+                      <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline underline-offset-2">
+                        Privacy Policy
+                      </a>{" "}
+                      and{" "}
+                      <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline underline-offset-2">
+                        Terms of Service
+                      </a>.
+                    </div>
+
+                    <div className="mt-6">
+                      <MagneticButton
+                        type="submit"
+                        disabled={loading}
+                        className="group w-full gap-2 rounded-xl px-6 py-4 font-bold shadow-elev-2 disabled:opacity-50"
+                      >
+                        {/* zari (gold thread) sheen */}
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-gold-light to-transparent opacity-70"
+                        />
+                        {loading ? (
+                          "Sending Request..."
+                        ) : (
+                          <>
+                            Send Proposal Request <Send className="w-4 h-4" />
+                          </>
+                        )}
+                      </MagneticButton>
+                    </div>
+                  </form>
+                )}
+              </GlassPanel>
+            </Reveal>
+          </div>
+        </div>
+      </section>
     </>
   );
 }

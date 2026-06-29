@@ -42,7 +42,7 @@ export default defineConfig({
       // Controls how much referrer information is included with requests, protecting user privacy
       'Referrer-Policy': 'strict-origin-when-cross-origin',
       // Restricts where resources can be loaded from, mitigating XSS and data injection attacks
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https: wss: ws:; frame-src 'self' https:; object-src 'none';",
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://widget.cloudinary.com https://upload-widget.cloudinary.com https://checkout.razorpay.com https://cdn.razorpay.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https: wss: ws:; frame-src 'self' https:; object-src 'none';",
     },
     proxy: {
       '/api': {
@@ -70,6 +70,21 @@ export default defineConfig({
             }
             if (id.includes('/motion/') || id.includes('/framer-motion/')) {
               return 'vendor-motion';
+            }
+            if (id.includes('/gsap/')) {
+              return 'vendor-gsap';
+            }
+            if (id.includes('/lenis/')) {
+              return 'vendor-lenis';
+            }
+            if (id.includes('/three/') || id.includes('/@react-three/')) {
+              return 'vendor-three';
+            }
+            if (id.includes('/@mui/') || id.includes('/@emotion/')) {
+              return 'vendor-mui';
+            }
+            if (id.includes('/recharts/') || id.includes('/d3-')) {
+              return 'vendor-charts';
             }
           }
         },

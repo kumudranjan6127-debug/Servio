@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import {
   FALLBACK_MS,
-  HERO_IMAGE_URL,
   MIN_DISPLAY_MS,
   MIN_DISPLAY_REDUCED_MS,
   PHASE_LABEL,
@@ -25,7 +24,7 @@ export interface AppLoadingState {
   retry: () => void;
 }
 
-type SignalKey = "fonts" | "hero" | "load";
+type SignalKey = "fonts" | "load";
 
 function phaseFromProgress(progress: number): LoadingPhase {
   if (progress >= 100) return "ready";
@@ -83,7 +82,6 @@ export function useAppLoading(): AppLoadingState {
   const loggedRef = useRef(false);
   const signalsRef = useRef<Record<SignalKey, boolean>>({
     fonts: false,
-    hero: false,
     load: false,
   });
 
@@ -93,7 +91,7 @@ export function useAppLoading(): AppLoadingState {
     readyRef.current = false;
     errorRef.current = false;
     loggedRef.current = false;
-    signalsRef.current = { fonts: false, hero: false, load: false };
+    signalsRef.current = { fonts: false, load: false };
     setSnapshot({ phase: "initializing", progress: 0 });
     setRunId((id) => id + 1);
   }, []);
@@ -127,20 +125,6 @@ export function useAppLoading(): AppLoadingState {
       targetRef.current = Math.min(90, targetRef.current + amount);
     };
 
-    // --- hero image (cached-image safe; resolves on load OR error) ---
-    const heroImg = new Image();
-    const heroPromise = new Promise<void>((resolve) => {
-      heroImg.decoding = "async";
-      heroImg.onload = () => resolve();
-      heroImg.onerror = () => {
-        console.warn("[SplashScreen] hero image failed to preload");
-        resolve();
-      };
-      heroImg.src = HERO_IMAGE_URL;
-      // onload won't fire for an already-cached image.
-      if (heroImg.complete) resolve();
-    });
-
     // --- window load ---
     let loadListener: (() => void) | null = null;
     const loadPromise = new Promise<void>((resolve) => {
@@ -165,13 +149,10 @@ export function useAppLoading(): AppLoadingState {
     // Credit progress only on genuine completion of each signal (a hung signal
     // simply never credits — the bar still creeps toward its cap).
     fontsPromise.then(() => {
-      if (mounted) bump("fonts", 25);
-    });
-    heroPromise.then(() => {
-      if (mounted) bump("hero", 35);
+      if (mounted) bump("fonts", 40);
     });
     loadPromise.then(() => {
-      if (mounted) bump("load", 25);
+      if (mounted) bump("load", 35);
     });
 
     const elapsed = performance.now() - firstPaint;
@@ -180,13 +161,13 @@ export function useAppLoading(): AppLoadingState {
       timeouts.push(t);
     });
 
-    // Reveal only once the CRITICAL above-the-fold assets (fonts + hero image)
-    // have genuinely finished AND the minimum display floor has elapsed. A
-    // genuinely hung critical resource leaves this pending, so the 10s fallback
-    // can win the race and surface the retry UI. (window 'load' waits for every
-    // below-the-fold asset, so it feeds the progress bar but does NOT gate the
-    // reveal — otherwise an image-heavy page could spuriously trip the fallback.)
-    Promise.all([fontsPromise, heroPromise, minDisplayPromise]).then(() => {
+    // Reveal only once the CRITICAL above-the-fold assets (fonts) have genuinely
+    // finished AND the minimum display floor has elapsed. A genuinely hung
+    // critical resource leaves this pending, so the 10s fallback can win the race
+    // and surface the retry UI. (window 'load' waits for every below-the-fold
+    // asset, so it feeds the progress bar but does NOT gate the reveal —
+    // otherwise an image-heavy page could spuriously trip the fallback.)
+    Promise.all([fontsPromise, minDisplayPromise]).then(() => {
       if (!mounted || errorRef.current) return;
       readyRef.current = true;
       targetRef.current = 100;
@@ -203,7 +184,6 @@ export function useAppLoading(): AppLoadingState {
           {
             progress: Math.round(displayRef.current),
             fontsReady: signalsRef.current.fonts,
-            imageReady: signalsRef.current.hero,
             windowLoaded: signalsRef.current.load,
             readyState: document.readyState,
           },
@@ -247,8 +227,6 @@ export function useAppLoading(): AppLoadingState {
       if (fallbackId) clearTimeout(fallbackId);
       timeouts.forEach((t) => clearTimeout(t));
       if (loadListener) window.removeEventListener("load", loadListener);
-      heroImg.onload = null;
-      heroImg.onerror = null;
     };
     // `skipSplash` is resolved once per mount (set-once ref) so it never
     // actually re-fires this effect; it's listed to satisfy exhaustive-deps.

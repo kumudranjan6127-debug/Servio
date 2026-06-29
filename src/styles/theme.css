@@ -50,84 +50,193 @@
   display: inline-block;
 }
 
+/* ── Aurora drift (used by <Aurora/>) ────────────────────────────────────── */
+@keyframes aurora-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(8%, 6%) scale(1.15); }
+}
+@keyframes aurora-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-6%, -8%) scale(1.1); }
+}
+@keyframes aurora-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-5%, 7%) scale(1.2); }
+}
+.animate-aurora-1 { animation: aurora-drift-1 22s ease-in-out infinite; }
+.animate-aurora-2 { animation: aurora-drift-2 28s ease-in-out infinite; }
+.animate-aurora-3 { animation: aurora-drift-3 25s ease-in-out infinite; }
+
+/* ── Mandala / charkha spin (used by <MandalaRing/> and spinner loaders) ──── */
+@keyframes mandala-spin { to { transform: rotate(360deg); } }
+@keyframes mandala-spin-rev { to { transform: rotate(-360deg); } }
+.animate-mandala { animation: mandala-spin 28s linear infinite; transform-origin: 50% 50%; }
+.animate-mandala-rev { animation: mandala-spin-rev 36s linear infinite; transform-origin: 50% 50%; }
+
+/* ── Marquee rail with hover/focus pause (TrustedBy) ──────────────────────── */
+@keyframes marquee-x { to { transform: translateX(-50%); } }
+.marquee-rail { animation: marquee-x 32s linear infinite; }
+.marquee-pause:hover .marquee-rail,
+.marquee-pause:focus-within .marquee-rail { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-rail { animation: none; }
+}
+
 
 
 :root {
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: #0f0f1a;
-  --card: #ffffff;
-  --card-foreground: #0f0f1a;
-  --popover: #ffffff;
-  --popover-foreground: #0f0f1a;
-  --primary: #4F46E5;
-  --primary-foreground: #ffffff;
-  --secondary: #7C3AED;
-  --secondary-foreground: #ffffff;
-  --muted: #f4f4f8;
-  --muted-foreground: #6b7280;
-  --accent: #06B6D4;
-  --accent-foreground: #ffffff;
-  --destructive: #d4183d;
-  --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.08);
+
+  /* ── Surfaces — warm sandstone ground, manuscript-ink text ────────────── */
+  --background: oklch(0.962 0.012 83);   /* sandstone paper */
+  --foreground: oklch(0.255 0.018 58);   /* ink */
+  --card: oklch(0.978 0.010 84);
+  --card-foreground: oklch(0.255 0.018 58);
+  --popover: oklch(0.982 0.009 84);
+  --popover-foreground: oklch(0.255 0.018 58);
+
+  /* ── Accent metals — copper · terracotta · peacock ────────────────────── */
+  --primary: oklch(0.55 0.115 47);    /* copper */
+  --primary-foreground: oklch(0.98 0.012 85);
+  --secondary: oklch(0.62 0.115 45);  /* terracotta */
+  --secondary-foreground: oklch(0.99 0.010 85);
+  --accent: oklch(0.55 0.115 196);    /* peacock */
+  --accent-foreground: oklch(0.98 0.012 85);
+  --ink-indigo: oklch(0.26 0.10 277); /* retained for legacy refs */
+
+  --muted: oklch(0.93 0.014 82);
+  --muted-foreground: oklch(0.47 0.022 60);
+  --destructive: oklch(0.55 0.20 28);
+  --destructive-foreground: oklch(0.99 0.010 85);
+  --border: oklch(0.86 0.020 74);
   --input: transparent;
-  --input-background: #f8f8fc;
-  --switch-background: #cbced4;
+  --input-background: oklch(0.945 0.013 82);
+  --switch-background: oklch(0.80 0.020 74);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #4F46E5;
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --ring: oklch(0.55 0.115 47);
+
+  /* ── Warm heritage layer — the primary cultural signal ────────────────── */
+  --gold: oklch(0.74 0.12 85);        /* #C99A3B zari base  */
+  --gold-light: oklch(0.88 0.10 88);  /* #F4D58D zari sheen */
+  --haldi: oklch(0.78 0.16 78);       /* turmeric  */
+  --saffron: oklch(0.78 0.17 65);     /* marigold  */
+  --peacock: oklch(0.62 0.13 195);    /* mor / teal */
+  --sindoor: oklch(0.58 0.21 25);     /* vermilion */
+  --terracotta: oklch(0.62 0.12 45);  /* warm earth */
+
+  /* ── Architectural materials — copper · brass · sandstone · granite · ink ─
+     The Indian visual identity lives here: carved metal & stone, not stickers. */
+  --copper: oklch(0.58 0.11 48);      /* #B87333 oxidised copper   */
+  --brass: oklch(0.77 0.11 92);       /* polished brass / kansa     */
+  --brass-deep: oklch(0.62 0.10 92);  /* engraved brass shadow      */
+  --sandstone: oklch(0.92 0.022 80);  /* warm sandstone / paper     */
+  --granite: oklch(0.20 0.006 60);    /* warm black granite         */
+  --ink: oklch(0.26 0.018 60);        /* manuscript ink             */
+
+  /* ── Brand gradient ───────────────────────────────────────────────────── */
+  --grad-brand: linear-gradient(110deg, var(--primary), var(--secondary), var(--accent));
+
+  /* ── Liquid-glass material (warm jali panes) ──────────────────────────── */
+  --glass-tint: var(--copper);
+  --glass-bg: color-mix(in oklch, oklch(0.98 0.012 84) 55%, transparent);
+  --glass-bg-strong: color-mix(in oklch, oklch(0.98 0.012 84) 75%, transparent);
+  --glass-sheen: rgba(255, 250, 240, 0.55);
+  --glass-rim: rgba(255, 247, 232, 0.70);
+  --glass-fg: oklch(0.255 0.018 58);
+  --glass-scrim: oklch(1 0 0 / 0.10);
+  --glass-blur: 16px;
+  --glass-saturate: 180%;
+  --glass-shadow: 0 8px 32px -8px oklch(0.45 0.07 47 / 0.20);
+
+  /* ── Elevation scale (warm) ───────────────────────────────────────────── */
+  --elev-1: 0 1px 2px rgb(60 40 20 / 0.06);
+  --elev-2: 0 8px 24px -8px rgb(60 40 20 / 0.12), inset 0 1px 0 var(--glass-sheen);
+  --elev-3: 0 24px 60px -12px oklch(0.55 0.10 48 / 0.30), 0 4px 12px rgb(60 40 20 / 0.10), inset 0 1px 0 var(--glass-sheen);
+  --elev-4: 0 40px 90px -20px oklch(0.50 0.10 46 / 0.40), 0 8px 24px rgb(60 40 20 / 0.14);
+
+  /* ── Aurora background stops (warm sandstone · copper · peacock) ───────── */
+  --aurora-1: oklch(0.74 0.10 70 / 0.35);
+  --aurora-2: oklch(0.64 0.11 45 / 0.28);
+  --aurora-3: oklch(0.60 0.10 196 / 0.22);
+
+  --chart-1: oklch(0.58 0.11 48);   /* copper */
+  --chart-2: oklch(0.55 0.12 196);  /* peacock */
+  --chart-3: oklch(0.74 0.12 85);   /* gold */
+  --chart-4: oklch(0.62 0.12 45);   /* terracotta */
+  --chart-5: oklch(0.58 0.21 25);   /* sindoor */
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.945 0.014 82);
+  --sidebar-foreground: oklch(0.255 0.018 58);
+  --sidebar-primary: oklch(0.55 0.115 47);
+  --sidebar-primary-foreground: oklch(0.98 0.012 85);
+  --sidebar-accent: oklch(0.90 0.018 80);
+  --sidebar-accent-foreground: oklch(0.255 0.018 58);
+  --sidebar-border: oklch(0.85 0.020 74);
+  --sidebar-ring: oklch(0.55 0.115 47);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  /* Black-granite ground, parchment ink */
+  --background: oklch(0.17 0.006 60);
+  --foreground: oklch(0.94 0.012 85);
+  --card: oklch(0.215 0.008 58);
+  --card-foreground: oklch(0.94 0.012 85);
+  --popover: oklch(0.215 0.008 58);
+  --popover-foreground: oklch(0.94 0.012 85);
+
+  /* Metals glow on granite */
+  --primary: oklch(0.72 0.12 68);     /* bright copper-gold */
+  --primary-foreground: oklch(0.18 0.010 60);
+  --secondary: oklch(0.66 0.12 46);   /* copper */
+  --secondary-foreground: oklch(0.96 0.010 85);
+  --accent: oklch(0.72 0.12 196);     /* peacock */
+  --accent-foreground: oklch(0.16 0.010 60);
+
+  --muted: oklch(0.26 0.008 58);
+  --muted-foreground: oklch(0.72 0.016 80);
+  --destructive: oklch(0.58 0.20 28);
+  --destructive-foreground: oklch(0.96 0.010 85);
+  --border: oklch(0.31 0.010 60);
+  --input: oklch(0.26 0.008 58);
+  --ring: oklch(0.72 0.12 68);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+
+  /* Metals catch more light on a dark granite ground */
+  --gold: oklch(0.82 0.13 88);
+  --gold-light: oklch(0.90 0.10 90);
+  --copper: oklch(0.68 0.12 50);
+  --brass: oklch(0.84 0.12 92);
+  --brass-deep: oklch(0.72 0.11 92);
+  --peacock: oklch(0.72 0.12 196);
+
+  /* Glass for dark (warm) */
+  --glass-bg: color-mix(in oklch, oklch(0.85 0.04 70) 7%, transparent);
+  --glass-bg-strong: color-mix(in oklch, oklch(0.85 0.04 70) 12%, transparent);
+  --glass-sheen: rgba(255, 244, 224, 0.20);
+  --glass-rim: rgba(255, 240, 214, 0.26);
+  --glass-fg: oklch(0.95 0.010 85);
+  --glass-scrim: oklch(0.14 0.006 60 / 0.35);
+  --glass-shadow: 0 8px 40px -8px oklch(0.10 0.02 50 / 0.55);
+
+  --aurora-1: oklch(0.55 0.10 60 / 0.30);
+  --aurora-2: oklch(0.50 0.11 45 / 0.26);
+  --aurora-3: oklch(0.52 0.10 196 / 0.22);
+
+  --chart-1: oklch(0.70 0.12 50);
+  --chart-2: oklch(0.72 0.12 196);
+  --chart-3: oklch(0.82 0.13 88);
+  --chart-4: oklch(0.66 0.12 45);
+  --chart-5: oklch(0.62 0.18 25);
+  --sidebar: oklch(0.205 0.008 58);
+  --sidebar-foreground: oklch(0.94 0.012 85);
+  --sidebar-primary: oklch(0.72 0.12 68);
+  --sidebar-primary-foreground: oklch(0.16 0.010 60);
+  --sidebar-accent: oklch(0.26 0.008 58);
+  --sidebar-accent-foreground: oklch(0.94 0.012 85);
+  --sidebar-border: oklch(0.31 0.010 60);
+  --sidebar-ring: oklch(0.68 0.12 50);
 }
 
 @theme inline {
@@ -169,6 +278,83 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ── Heritage colours → utilities (bg-gold, text-saffron, border-peacock…) ─ */
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-haldi: var(--haldi);
+  --color-saffron: var(--saffron);
+  --color-peacock: var(--peacock);
+  --color-sindoor: var(--sindoor);
+  --color-terracotta: var(--terracotta);
+  --color-ink-indigo: var(--ink-indigo);
+  --color-copper: var(--copper);
+  --color-brass: var(--brass);
+  --color-brass-deep: var(--brass-deep);
+  --color-sandstone: var(--sandstone);
+  --color-granite: var(--granite);
+  --color-ink: var(--ink);
+
+  /* ── Elevation → shadow-elev-* utilities ──────────────────────────────── */
+  --shadow-elev-1: var(--elev-1);
+  --shadow-elev-2: var(--elev-2);
+  --shadow-elev-3: var(--elev-3);
+  --shadow-elev-4: var(--elev-4);
+
+  /* ── Easing → ease-enter utility (+ global --ease-enter var) ───────────── */
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ── Type system ──────────────────────────────────────────────────────── */
+  --font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Fraunces', 'Plus Jakarta Sans', georgia, serif;
+  --font-indic: 'Anek Devanagari', var(--font-sans);
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --text-eyebrow: 0.8125rem;
+  --text-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lede: clamp(1.125rem, 1.02rem + 0.55vw, 1.5rem);
+  --text-headline: clamp(2rem, 1.5rem + 2.4vw, 3.25rem);
+  --text-headline--line-height: 1.05;
+  --text-headline--letter-spacing: -0.018em;
+  --text-display: clamp(2.75rem, 1.6rem + 5.6vw, 6rem);
+  --text-display--line-height: 0.95;
+  --text-display--letter-spacing: -0.022em;
+}
+
+/* ── Brand gradient helpers — codemod target for the 76 hardcoded
+   `from-indigo-600 to-purple-600` usages, collapsing the violet drift. ────── */
+.text-gradient-brand {
+  background: var(--grad-brand);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.bg-grad-brand {
+  background-image: var(--grad-brand);
+}
+
+/* ── Zari (gold thread) shimmer — cultural re-tint of the hero shimmer.
+   Reuses the existing @keyframes shimmer-sweep. ───────────────────────────── */
+.zari-shimmer {
+  background: linear-gradient(90deg, #8a6d1f 0%, #c99a3b 35%, #f4d58d 50%, #c99a3b 65%, #8a6d1f 100%);
+  background-size: 200% auto;
+  color: #c99a3b;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-sweep 6s linear infinite;
+}
+.eyebrow {
+  font-size: var(--text-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-feature-settings: 'case', 'ss01';
+}
+.nums-tabular {
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 @layer base {
@@ -181,8 +367,10 @@
     font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
   }
 
+  /* Native smooth-scroll is OFF — Lenis owns smoothing (and reduced-motion
+     users correctly get instant jumps). See useSmoothScroll + scrollToSection. */
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
 
   /**
@@ -294,3 +482,11 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Lenis smooth-scroll plumbing ────────────────────────────────────────── */
+html.lenis,
+html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-smooth iframe { pointer-events: none; }

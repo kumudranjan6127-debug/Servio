@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { sendEmailVerification } from "firebase/auth";
 import { auth } from "../../Firebase/firebase";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "../../app/components/ui/card";
 import { Badge } from "../../app/components/ui/badge";
 import { Progress } from "../../app/components/ui/progress";
@@ -85,6 +86,26 @@ function PageTitle() {
       </p>
     </motion.div>
   );
+}
+
+function loadRazorpay() {
+  return new Promise((resolve) => {
+    // @ts-expect-error - Razorpay injected via script
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => {
+      resolve(true);
+    };
+    script.onerror = (error) => {
+      console.error("Razorpay script load error:", error);
+      resolve(false);
+    };
+    document.body.appendChild(script);
+  });
 }
 
 export function PaymentManagement() {
@@ -195,6 +216,88 @@ export function PaymentManagement() {
 
 function BillingView({ billing }: { billing: ClientBilling }) {
   const { totalCost, amountPaid, remaining, paidPercent, payments } = billing;
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  async function handlePayment(specificAmount?: number, pendingPaymentId?: string) {
+    if (!auth.currentUser?.email) {
+      toast.error("User email not found");
+      return;
+    }
+
+    const amountToPay = specificAmount || remaining;
+    if (amountToPay <= 0) return;
+
+    setIsProcessing(true);
+    try {
+      const res = await loadRazorpay();
+      if (!res) {
+        toast.error("Razorpay SDK failed to load. Are you online?");
+        setIsProcessing(false);
+        return;
+      }
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
+      // Create Order on Backend
+      const orderRes = await fetch(`${baseUrl}/api/razorpay?action=createOrder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: amountToPay,
+          clientEmail: auth.currentUser.email,
+        }),
+      });
+      const orderData = await orderRes.json();
+
+      if (!orderRes.ok) {
+        throw new Error(orderData.error || "Failed to create order");
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Servio",
+        description: "Project Billing",
+        order_id: orderData.id,
+        handler: async function (response: Record<string, string>) {
+          const verifyRes = await fetch(`${baseUrl}/api/razorpay?action=verifyPayment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              clientEmail: auth.currentUser!.email,
+              amount: amountToPay,
+              pendingPaymentId: pendingPaymentId,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyRes.ok) {
+            toast.success("Payment successful!");
+          } else {
+            toast.error(verifyData.error || "Payment verification failed");
+          }
+        },
+        prefill: {
+          name: auth.currentUser.displayName || "Client",
+          email: auth.currentUser.email,
+        },
+        theme: {
+          color: "#6366f1",
+        },
+      };
+
+      // @ts-expect-error - Razorpay injected via script
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(err.message || "Failed to initiate payment");
+    } finally {
+      setIsProcessing(false);
+    }
+  }
 
   const summaryCards = [
     {
@@ -246,6 +349,15 @@ function BillingView({ billing }: { billing: ClientBilling }) {
                     <p className={`text-2xl font-bold mt-1 ${item.color}`}>
                       {inr(item.value)}
                     </p>
+                    {item.label === "Remaining Balance" && remaining > 0 && (
+                      <button
+                        onClick={() => handlePayment()}
+                        disabled={isProcessing}
+                        className="mt-3 text-sm px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow-sm transition-colors disabled:opacity-50 flex items-center justify-center"
+                      >
+                        {isProcessing ? "Processing..." : "Pay Now"}
+                      </button>
+                    )}
                   </div>
                   <div className={`rounded-lg p-2.5 ${item.iconBg}`}>
                     <item.icon className={`h-5 w-5 ${item.iconColor}`} />
@@ -328,7 +440,20 @@ function BillingView({ billing }: { billing: ClientBilling }) {
                       <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
                         {payment.reference || "—"}
                       </TableCell>
-                      <TableCell>{paymentStatusBadge(payment.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {paymentStatusBadge(payment.status)}
+                          {payment.status === "pending" && (
+                            <button
+                              onClick={() => handlePayment(payment.amount, payment.id)}
+                              disabled={isProcessing}
+                              className="text-xs px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded shadow-sm transition-colors disabled:opacity-50"
+                            >
+                              Pay Now
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

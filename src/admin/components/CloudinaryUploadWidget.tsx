@@ -26,8 +26,8 @@ export function CloudinaryUploadWidget({ onSuccess, className }: CloudinaryUploa
       // @ts-expect-error window.cloudinary is injected by the external script
       cloudinaryRef.current = window.cloudinary;
       
-      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-      const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME?.replace(/['"]/g, '').trim();
+      const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET?.replace(/['"]/g, '').trim();
 
       if (!cloudName || !uploadPreset || !cloudinaryRef.current) {
         console.error("Cloudinary environment variables or script are missing.");
@@ -74,7 +74,13 @@ export function CloudinaryUploadWidget({ onSuccess, className }: CloudinaryUploa
       variant="secondary" 
       className={className}
       disabled={!isLoaded}
-      onClick={() => widgetRef.current?.open()}
+      onClick={() => {
+        if (!widgetRef.current) {
+          alert("Cloudinary is not initialized. If you just added the API keys to .env, please restart your Vite dev server.");
+          return;
+        }
+        widgetRef.current.open();
+      }}
     >
       <Upload className="mr-2 h-4 w-4" aria-hidden="true" />
       Upload Image

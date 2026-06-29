@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { signOut } from "firebase/auth";
 import { auth } from "../../Firebase/firebase";
 import { useAuth } from "../../Firebase/useAuth";
@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../app/components/ui/avatar";
 import { Button } from "../../app/components/ui/button";
-import { Separator } from "../../app/components/ui/separator";
+import { Jali } from "../../app/components/motifs";
 import { NotificationProvider } from "../notifications/NotificationContext";
 import { NotificationBell } from "../notifications/NotificationBell";
 
@@ -43,25 +43,48 @@ function NavLink({
   label,
   active,
   onClick,
+  pillId,
+  reduce,
 }: {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   active: boolean;
   onClick?: () => void;
+  pillId: string;
+  reduce: boolean;
 }) {
   return (
     <Link
       to={to}
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+      aria-current={active ? "page" : undefined}
+      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
         active
-          ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
-          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-slate-800 dark:hover:text-gray-200"
+          ? "text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
       }`}
     >
-      <Icon className="h-5 w-5 shrink-0" />
-      {label}
+      {active && (
+        <motion.span
+          layoutId={pillId}
+          aria-hidden
+          className="absolute inset-0 rounded-lg bg-sidebar-accent ring-1 ring-sidebar-ring/30 shadow-elev-1"
+          transition={
+            reduce
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 520, damping: 40 }
+          }
+        />
+      )}
+      <Icon
+        className={`relative z-10 h-5 w-5 shrink-0 transition-colors ${
+          active
+            ? "text-primary"
+            : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+        }`}
+      />
+      <span className="relative z-10">{label}</span>
     </Link>
   );
 }
@@ -72,6 +95,7 @@ export function DashboardLayout() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
+  const reduce = useReducedMotion() ?? false;
 
   const handleSignOut = async () => {
     try {
@@ -97,20 +121,21 @@ export function DashboardLayout() {
     return location.pathname.startsWith(to);
   };
 
-  const sidebarContent = (
+  const renderSidebar = (idPrefix: string) => (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 px-4 py-5">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white text-sm font-bold">
+      {/* Brand */}
+      <div className="flex items-center px-5 py-5">
+        <Link to="/" className="group flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-grad-brand text-sm font-bold text-white shadow-elev-1">
             S
-          </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 bg-clip-text text-transparent">
+          </span>
+          <span className="font-display text-xl font-semibold text-gradient-brand">
             Servio
           </span>
         </Link>
       </div>
 
-      <Separator />
+      <div className="mx-3 h-px bg-sidebar-border" />
 
       <nav className="flex-1 space-y-1 px-3 py-4">
         {NAV_ITEMS.map((item) => (
@@ -119,61 +144,74 @@ export function DashboardLayout() {
             {...item}
             active={isActive(item.to, item.end)}
             onClick={() => setSidebarOpen(false)}
+            pillId={`${idPrefix}-nav-pill`}
+            reduce={reduce}
           />
         ))}
       </nav>
 
-      <Separator />
+      {/* Footer — the only place a motif is allowed, kept barely-there */}
+      <div className="relative mt-auto">
+        <Jali
+          className="absolute inset-x-0 bottom-0 h-44"
+          color="var(--gold)"
+          opacity={0.05}
+        />
+        <div className="relative">
+          <div className="mx-3 h-px bg-sidebar-border" />
+          <div className="space-y-1 p-3">
+            <button
+              onClick={toggleTheme}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+              aria-label="Toggle theme"
+            >
+              {isDarkMode ? (
+                <>
+                  <Sun className="h-5 w-5 shrink-0 text-saffron" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="h-5 w-5 shrink-0 text-sidebar-foreground/60" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
 
-      <div className="p-4 space-y-3">
-        <button
-          onClick={toggleTheme}
-          className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-slate-800 dark:hover:text-gray-200 transition-colors"
-          aria-label="Toggle theme"
-        >
-          {isDarkMode ? (
-            <>
-              <Sun className="h-5 w-5 shrink-0 text-yellow-500" />
-              <span>Light Mode</span>
-            </>
-          ) : (
-            <>
-              <Moon className="h-5 w-5 shrink-0 text-gray-500" />
-              <span>Dark Mode</span>
-            </>
-          )}
-        </button>
-        <Link
-          to="/"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-slate-800 dark:hover:text-gray-200 transition-colors"
-        >
-          <Home className="h-5 w-5 shrink-0" />
-          Back to Home
-        </Link>
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={currentUser?.photoURL ?? undefined} />
-            <AvatarFallback className="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-              {currentUser?.displayName ?? "Client"}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {currentUser?.email}
-            </p>
+            <Link
+              to="/"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+            >
+              <Home className="h-5 w-5 shrink-0 text-sidebar-foreground/60" />
+              Back to Home
+            </Link>
+
+            <div className="mt-2 flex items-center gap-3 rounded-lg border border-sidebar-border/70 bg-sidebar-accent/40 px-3 py-2.5">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={currentUser?.photoURL ?? undefined} />
+                <AvatarFallback className="bg-primary/10 text-xs text-primary">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-sidebar-foreground">
+                  {currentUser?.displayName ?? "Client"}
+                </p>
+                <p className="truncate text-xs text-sidebar-foreground/60">
+                  {currentUser?.email}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+                className="shrink-0 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-            className="shrink-0"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>
@@ -181,85 +219,97 @@ export function DashboardLayout() {
 
   return (
     <NotificationProvider>
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:block">
-        {sidebarContent}
-      </aside>
+      <div className="min-h-screen bg-background text-foreground">
+        {/* Desktop glass rail */}
+        <aside
+          className="glass glass-thin fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border text-sidebar-foreground lg:block"
+          style={{ borderRadius: 0 }}
+        >
+          {renderSidebar("desktop")}
+        </aside>
 
-      {/* Mobile sidebar overlay */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            />
-            <motion.aside
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 left-0 z-50 w-64 border-r border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:hidden"
-            >
+        {/* Mobile sidebar overlay */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={reduce ? { duration: 0 } : { duration: 0.15 }}
+                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+                onClick={() => setSidebarOpen(false)}
+              />
+              <motion.aside
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={
+                  reduce
+                    ? { duration: 0 }
+                    : { type: "spring", stiffness: 300, damping: 30 }
+                }
+                className="glass glass-strong fixed inset-y-0 left-0 z-50 w-64 border-r border-sidebar-border text-sidebar-foreground lg:hidden"
+                style={{ borderRadius: 0 }}
+              >
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-4 top-4 z-10 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                  onClick={() => setSidebarOpen(false)}
+                  aria-label="Close sidebar"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+                {renderSidebar("mobile")}
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Main content */}
+        <div className="lg:pl-64">
+          {/* Top bar */}
+          <header
+            className="glass sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border px-4"
+            style={{ borderRadius: 0 }}
+          >
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-4 right-4"
-                onClick={() => setSidebarOpen(false)}
-                aria-label="Close sidebar"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open sidebar"
+                className="lg:hidden"
               >
-                <X className="h-5 w-5" />
+                <Menu className="h-5 w-5" />
               </Button>
-              {sidebarContent}
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+              <span className="font-display text-base font-semibold text-gradient-brand lg:hidden">
+                Servio
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+              >
+                {isDarkMode ? (
+                  <Sun className="h-5 w-5 text-saffron" />
+                ) : (
+                  <Moon className="h-5 w-5 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
+          </header>
 
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-gray-200 bg-white/80 backdrop-blur-md px-4 dark:border-slate-800 dark:bg-slate-900/80">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open sidebar"
-              className="lg:hidden"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <span className="text-sm font-semibold bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 bg-clip-text text-transparent lg:hidden">
-              Servio Dashboard
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-          <NotificationBell />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-          >
-            {isDarkMode ? (
-              <Sun className="h-5 w-5 text-yellow-500" />
-            ) : (
-              <Moon className="h-5 w-5 text-gray-600" />
-            )}
-          </Button>
-          </div>
-        </header>
-
-        <main className="p-4 md:p-6 lg:p-8">
-          <Outlet />
-        </main>
+          <main className="p-4 md:p-6 lg:p-8">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
     </NotificationProvider>
   );
 }

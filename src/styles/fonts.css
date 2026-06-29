@@ -1,1 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/*
+ * Web fonts are loaded via a non-render-blocking <link> in index.html (preconnect
+ * + a single stylesheet request), NOT a CSS @import here — a CSS @import is only
+ * discovered after this stylesheet parses, which delays first paint.
+ *
+ * Family roles (bound to tokens in theme.css → @theme inline):
+ *   Inter            → --font-sans   (body / UI)
+ *   Fraunces         → --font-display(editorial display, variable opsz)
+ *   Anek Devanagari  → --font-indic  (Indic accent, used sparingly)
+ *   JetBrains Mono   → --font-mono   (code / tabular contexts)
+ */
